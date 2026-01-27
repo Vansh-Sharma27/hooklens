@@ -32,10 +32,47 @@ app.use((req, res, next) => {
 // Middleware
 app.use(corsMiddleware);
 app.use(rateLimiter);
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-app.use(express.text({ limit: '1mb' }));
-app.use(express.raw({ limit: '1mb', type: '*/*' }));
+
+// Custom body parser middleware that ensures UTF-8 encoding
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') {
+    return next();
+  }
+
+  const contentType = req.get('content-type') || 'application/octet-stream';
+  
+  let data = '';
+  req.setEncoding('utf8'); // Force UTF-8 encoding
+  
+  req.on('data', chunk => {
+    data += chunk;
+  });
+  
+  req.on('end', () => {
+    // Try to parse as JSON if content-type indicates JSON
+    if (contentType.includes('application/json')) {
+      try {
+        req.body = JSON.parse(data);
+      } catch (e) {
+        req.body = data; // Fall back to raw string if invalid JSON
+      }
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      // Parse form data
+      const params = new URLSearchParams(data);
+      req.body = Object.fromEntries(params);
+    } else {
+      // Keep as raw string for everything else
+      req.body = data;
+    }
+    next();
+  });
+  
+  req.on('error', (err) => {
+    console.error('Body parsing error:', err);
+    req.body = '';
+    next();
+  });
+});
 
 // Static files
 app.use('/static', express.static(path.join(__dirname, '../client')));

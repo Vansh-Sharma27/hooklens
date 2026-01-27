@@ -10,9 +10,10 @@ const tabBody = document.getElementById('tab-body');
 const copyHeadersButton = document.getElementById('copy-headers');
 const copyCurlButton = document.getElementById('copy-curl');
 const copyBodyButton = document.getElementById('copy-body');
+const forwardButton = document.getElementById('forward-request');
 const srAnnouncer = document.getElementById('sr-announcer');
 
-export function renderRequestList(requests, selectedId) {
+export function renderRequestList(requests, selectedId, diffModeData = null) {
   requestCount.textContent = String(requests.length);
   if (!requests.length) {
     listContainer.innerHTML = '<div class="empty-state">Waiting for requests...</div>';
@@ -22,15 +23,20 @@ export function renderRequestList(requests, selectedId) {
   const rows = requests
     .map(request => {
       const isSelected = request.id === selectedId;
+      const isDiffMode = diffModeData?.isDiffMode || false;
+      const isDiffSelected = diffModeData?.selectedForDiff?.includes(request.id) || false;
+      
+      const classes = ['request-item'];
+      if (isSelected && !isDiffMode) classes.push('is-selected');
+      if (isDiffMode) classes.push('diff-selectable');
+      if (isDiffSelected) classes.push('diff-selected');
+      
       const contentType = request.contentType || '—';
       const size = formatBytes(request.bodySize || 0);
       const timestamp = formatTimestamp(request.timestamp);
-      const notableHeader = Object.keys(request.headers || {})[0] || '—';
 
       return `
-        <div class="request-item ${isSelected ? 'is-selected' : ''}" data-request-id="${escapeHtml(
-          request.id
-        )}">
+        <div class="${classes.join(' ')}" data-request-id="${escapeHtml(request.id)}">
           <div class="request-item__indicator"></div>
           <div class="method-badge" data-method="${escapeHtml(request.method)}">
             ${escapeHtml(request.method)}
@@ -54,6 +60,12 @@ export function renderRequestDetail(request) {
     tabQuery.innerHTML = '';
     tabBody.innerHTML = '';
     setDetailActionsEnabled(false);
+    
+    // Hide signature panel when no request selected
+    const signaturePanel = document.getElementById('signature-panel');
+    if (signaturePanel) {
+      signaturePanel.style.display = 'none';
+    }
     return;
   }
 
@@ -67,6 +79,12 @@ export function renderRequestDetail(request) {
   tabBody.innerHTML = renderBody(request);
 
   setDetailActionsEnabled(true);
+  
+  // Show signature panel when request is selected
+  const signaturePanel = document.getElementById('signature-panel');
+  if (signaturePanel) {
+    signaturePanel.style.display = 'block';
+  }
 }
 
 export function renderConnectionStatus(status) {
@@ -159,4 +177,5 @@ function setDetailActionsEnabled(enabled) {
   copyHeadersButton.disabled = !enabled;
   copyCurlButton.disabled = !enabled;
   copyBodyButton.disabled = !enabled;
+  if (forwardButton) forwardButton.disabled = !enabled;
 }

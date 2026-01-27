@@ -1,6 +1,6 @@
 {
   "name": "hooklens",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Webhook debugger - capture, inspect, and debug HTTP requests in real-time",
   "main": "server/index.js",
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
+    "diff": "^8.0.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "nanoid": "^5.1.6",

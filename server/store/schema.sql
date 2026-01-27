@@ -1,4 +1,4 @@
--- HookLens v1.1 Database Schema
+-- HookLens v1.2 Database Schema
 -- SQLite database for persistent webhook endpoint and request storage
 
 -- Endpoints table
@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS endpoints (
   status_code INTEGER DEFAULT 200,
   response_body TEXT DEFAULT 'OK',
   content_type TEXT DEFAULT 'text/plain',
-  delay INTEGER DEFAULT 0
+  delay INTEGER DEFAULT 0,
+  forward_url TEXT DEFAULT NULL,
+  auto_forward INTEGER DEFAULT 0
 );
 
 -- Requests table

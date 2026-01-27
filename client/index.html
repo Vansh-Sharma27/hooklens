@@ -50,9 +50,12 @@
       <section class="panel endpoint-panel" aria-label="Webhook endpoint URL">
         <div class="endpoint-panel__header">
           <span class="panel-title">Your Webhook URL</span>
-          <span id="connection-status" class="status-pill status-pill--connecting">
-            Connecting
-          </span>
+          <div class="endpoint-panel__actions">
+            <button id="export-postman-btn" class="ghost-button">Export to Postman</button>
+            <span id="connection-status" class="status-pill status-pill--connecting">
+              Connecting
+            </span>
+          </div>
         </div>
         <div class="endpoint-panel__body">
           <input
@@ -134,15 +137,49 @@
         </div>
       </section>
 
+      <section class="panel forwarding-panel" aria-label="Request forwarding">
+        <div class="panel-header">
+          <span class="panel-title">Request Forwarding</span>
+          <button id="toggle-forwarding" class="ghost-button">Hide</button>
+        </div>
+        <div class="forwarding-panel__content" id="forwarding-panel-content">
+          <div class="forwarding-grid">
+            <label class="field field--wide">
+              <span>Forward URL</span>
+              <input
+                id="forward-url"
+                class="field-input"
+                type="text"
+                placeholder="http://localhost:3000/webhook"
+              />
+            </label>
+            <label class="field field--checkbox">
+              <input
+                id="auto-forward"
+                type="checkbox"
+              />
+              <span>Auto-forward incoming requests</span>
+            </label>
+          </div>
+          <div class="forwarding-actions">
+            <button id="save-forwarding" class="primary-button">Save Forwarding Config</button>
+          </div>
+          <div id="forward-result" class="forward-result" style="display: none;"></div>
+        </div>
+      </section>
+
       <section class="content-grid">
         <section class="panel request-list-panel" aria-label="Captured requests">
           <div class="panel-header">
             <span class="panel-title">
               Incoming Requests (<span id="request-count">0</span>)
             </span>
-            <button id="clear-requests" class="ghost-button" disabled>
-              Clear All
-            </button>
+            <div class="panel-actions">
+              <button id="diff-mode-btn" class="ghost-button">Compare</button>
+              <button id="clear-requests" class="ghost-button" disabled>
+                Clear All
+              </button>
+            </div>
           </div>
           <div class="search-filter-bar">
             <input
@@ -195,6 +232,23 @@
             <button id="copy-body" class="ghost-button" disabled>
               Copy Body
             </button>
+            <button id="forward-request" class="ghost-button" disabled>
+              Forward
+            </button>
+          </div>
+          <div class="signature-panel" id="signature-panel" style="display: none;">
+            <h4 class="panel-subtitle">Verify Webhook Signature</h4>
+            <div class="signature-grid">
+              <select id="sig-provider" class="field-input">
+                <option value="stripe">Stripe</option>
+                <option value="github">GitHub</option>
+                <option value="slack">Slack</option>
+                <option value="twilio">Twilio</option>
+              </select>
+              <input id="sig-secret" type="password" class="field-input" placeholder="Webhook secret" />
+              <button id="verify-sig" class="primary-button">Verify</button>
+            </div>
+            <div id="sig-result" class="sig-result" style="display: none;"></div>
           </div>
         </section>
       </section>
@@ -210,6 +264,47 @@
 
     <div id="sr-announcer" class="sr-only" role="status" aria-live="polite"></div>
 
+    <!-- Diff Modal -->
+    <div class="diff-modal" id="diff-modal" style="display: none;">
+      <div class="diff-modal-content">
+        <div class="diff-header">
+          <span>Comparing Requests</span>
+          <button id="close-diff" class="close-button">×</button>
+        </div>
+        <div class="diff-tabs">
+          <button class="tab-button is-active" data-tab="headers">Headers</button>
+          <button class="tab-button" data-tab="query">Query</button>
+          <button class="tab-button" data-tab="body">Body</button>
+        </div>
+        <div class="diff-content" id="diff-content">
+          <div class="empty-state">Select two requests to compare</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="export-modal" id="export-modal" style="display: none;">
+      <div class="export-modal-content">
+        <div class="modal-header">
+          <h4>Export to Postman</h4>
+          <button id="cancel-export" class="close-button">×</button>
+        </div>
+        <div class="modal-body">
+          <label class="field">
+            <span>Collection Name</span>
+            <input id="export-name" class="field-input" type="text" placeholder="My Collection" />
+          </label>
+          <label class="field">
+            <span>Base URL for Requests</span>
+            <input id="export-baseurl" class="field-input" type="text" placeholder="http://localhost:3000" />
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button id="export-confirm" class="primary-button">Download Collection</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/static/js/utils.js"></script>
     <script type="module" src="/static/js/api.js"></script>
     <script type="module" src="/static/js/websocket.js"></script>
@@ -217,6 +312,10 @@
     <script type="module" src="/static/js/endpoints.js"></script>
     <script type="module" src="/static/js/search.js"></script>
     <script type="module" src="/static/js/mobile.js"></script>
+    <script type="module" src="/static/js/forwarding.js"></script>
+    <script type="module" src="/static/js/signatures.js"></script>
+    <script type="module" src="/static/js/diff.js"></script>
+    <script type="module" src="/static/js/export.js"></script>
     <script type="module" src="/static/js/app.js"></script>
   </body>
 </html>

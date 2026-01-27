@@ -2,6 +2,7 @@ const express = require('express');
 const store = require('../store');
 const { broadcast } = require('../websocket/server');
 const { parseRequest } = require('../utils/parser');
+const { forwardRequest } = require('../utils/forward');
 
 const router = express.Router();
 
@@ -21,6 +22,23 @@ router.all('/:endpointId', async (req, res) => {
     type: 'NEW_REQUEST',
     data: capturedRequest
   });
+
+  // Auto-forward if configured (non-blocking)
+  if (endpoint.config.autoForward && endpoint.config.forwardUrl) {
+    forwardRequest(capturedRequest, endpoint.config.forwardUrl)
+      .then(result => {
+        broadcast(endpointId, {
+          type: 'FORWARD_RESULT',
+          data: {
+            requestId: capturedRequest.id,
+            result: result
+          }
+        });
+      })
+      .catch(error => {
+        console.error('Auto-forward error:', error);
+      });
+  }
 
   if (endpoint.config.delay > 0) {
     await new Promise(resolve => setTimeout(resolve, endpoint.config.delay));

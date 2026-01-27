@@ -35,6 +35,31 @@ class SQLiteStore {
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
     this.db.exec(schema);
+    
+    // Run migrations for existing databases
+    this.runMigrations();
+  }
+  
+  runMigrations() {
+    // Migration for v1.2: Add forwarding columns
+    try {
+      // Check if columns exist
+      const tableInfo = this.db.prepare('PRAGMA table_info(endpoints)').all();
+      const hasForwardUrl = tableInfo.some(col => col.name === 'forward_url');
+      const hasAutoForward = tableInfo.some(col => col.name === 'auto_forward');
+      
+      if (!hasForwardUrl) {
+        this.db.exec('ALTER TABLE endpoints ADD COLUMN forward_url TEXT DEFAULT NULL');
+        console.log('Migration: Added forward_url column to endpoints');
+      }
+      
+      if (!hasAutoForward) {
+        this.db.exec('ALTER TABLE endpoints ADD COLUMN auto_forward INTEGER DEFAULT 0');
+        console.log('Migration: Added auto_forward column to endpoints');
+      }
+    } catch (error) {
+      console.error('Migration error:', error);
+    }
   }
 
   createEndpoint() {
@@ -59,14 +84,16 @@ class SQLiteStore {
         statusCode: DEFAULT_STATUS_CODE,
         responseBody: DEFAULT_RESPONSE_BODY,
         contentType: DEFAULT_CONTENT_TYPE,
-        delay: 0
+        delay: 0,
+        forwardUrl: null,
+        autoForward: false
       },
       requests: []
     };
 
     const insert = this.db.prepare(`
-      INSERT INTO endpoints (id, created_at, expires_at, status_code, response_body, content_type, delay)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO endpoints (id, created_at, expires_at, status_code, response_body, content_type, delay, forward_url, auto_forward)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     insert.run(
@@ -76,7 +103,9 @@ class SQLiteStore {
       endpoint.config.statusCode,
       endpoint.config.responseBody,
       endpoint.config.contentType,
-      endpoint.config.delay
+      endpoint.config.delay,
+      endpoint.config.forwardUrl,
+      endpoint.config.autoForward ? 1 : 0
     );
 
     return endpoint;
@@ -108,7 +137,9 @@ class SQLiteStore {
         statusCode: row.status_code,
         responseBody: row.response_body,
         contentType: row.content_type,
-        delay: row.delay
+        delay: row.delay,
+        forwardUrl: row.forward_url,
+        autoForward: row.auto_forward === 1
       },
       requests: requests.map(this.rowToRequest)
     };
@@ -166,7 +197,7 @@ class SQLiteStore {
     
     const update = this.db.prepare(`
       UPDATE endpoints 
-      SET status_code = ?, response_body = ?, content_type = ?, delay = ?
+      SET status_code = ?, response_body = ?, content_type = ?, delay = ?, forward_url = ?, auto_forward = ?
       WHERE id = ?
     `);
 
@@ -175,6 +206,8 @@ class SQLiteStore {
       updates.responseBody,
       updates.contentType,
       updates.delay,
+      updates.forwardUrl || null,
+      updates.autoForward ? 1 : 0,
       endpointId
     );
 

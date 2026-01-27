@@ -19,5 +19,13 @@ module.exports = {
 
   // Database configuration (v1.1)
   DB_PATH: process.env.DB_PATH || './data/hooklens.db',
-  CLEANUP_INTERVAL: 60 * 60 * 1000 // 1 hour (v1.1: upgraded from 5 minutes)
+  CLEANUP_INTERVAL: 60 * 60 * 1000, // 1 hour (v1.1: upgraded from 5 minutes)
+
+  // Forwarding (v1.2)
+  FORWARD_TIMEOUT: 30000, // 30 seconds
+  MAX_FORWARD_URL_LENGTH: 2048,
+
+  // Signature verification (v1.2)
+  SIGNATURE_PROVIDERS: ['stripe', 'github', 'slack', 'twilio'],
+  SIGNATURE_TIMESTAMP_TOLERANCE: 300 // 5 minutes (for replay protection)
 };
