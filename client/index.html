@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HookLens — Webhook Debugger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="app-root text-[#e6edf3] bg-[#0d1117]">
+    <header class="app-header">
+      <div class="app-header__brand">
+        <span class="app-logo">◇</span>
+        <div>
+          <div class="app-title">HookLens</div>
+          <div class="app-subtitle">Webhook Debugger</div>
+        </div>
+      </div>
+      <div class="app-header__actions">
+        <button class="icon-button" id="theme-toggle" aria-label="Toggle theme">
+          ☾
+        </button>
+        <a
+          class="icon-button"
+          href="https://github.com/"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub repository"
+        >
+          GitHub
+        </a>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="panel endpoint-panel" aria-label="Webhook endpoint URL">
+        <div class="endpoint-panel__header">
+          <span class="panel-title">Your Webhook URL</span>
+          <span id="connection-status" class="status-pill status-pill--connecting">
+            Connecting
+          </span>
+        </div>
+        <div class="endpoint-panel__body">
+          <input
+            id="endpoint-url"
+            class="endpoint-input"
+            type="text"
+            readonly
+            value="Loading..."
+            aria-label="Webhook endpoint URL"
+          />
+          <button id="copy-endpoint" class="primary-button">Copy</button>
+        </div>
+        <div class="endpoint-panel__meta">
+          <span id="endpoint-meta">Creating endpoint...</span>
+        </div>
+      </section>
+
+      <section class="panel response-panel" aria-label="Response configuration">
+        <div class="panel-header">
+          <span class="panel-title">Response Settings</span>
+          <button id="toggle-response" class="ghost-button">Hide</button>
+        </div>
+        <div class="response-panel__content" id="response-panel-content">
+          <div class="response-grid">
+            <label class="field">
+              <span>Status Code</span>
+              <select id="response-status" class="field-input">
+                <option value="200">200 OK</option>
+                <option value="201">201 Created</option>
+                <option value="204">204 No Content</option>
+                <option value="400">400 Bad Request</option>
+                <option value="401">401 Unauthorized</option>
+                <option value="403">403 Forbidden</option>
+                <option value="404">404 Not Found</option>
+                <option value="500">500 Internal Server Error</option>
+                <option value="502">502 Bad Gateway</option>
+                <option value="503">503 Service Unavailable</option>
+              </select>
+            </label>
+            <label class="field field--wide">
+              <span>Response Body</span>
+              <textarea
+                id="response-body"
+                class="field-input field-textarea"
+                rows="3"
+              >OK</textarea>
+            </label>
+            <label class="field">
+              <span>Content Type</span>
+              <input
+                id="response-content-type"
+                class="field-input"
+                type="text"
+                value="text/plain"
+              />
+            </label>
+            <label class="field">
+              <span>Delay (ms)</span>
+              <input
+                id="response-delay"
+                class="field-input"
+                type="number"
+                min="0"
+                max="30000"
+                value="0"
+              />
+            </label>
+          </div>
+          <div class="response-actions">
+            <div class="quick-status">
+              <button class="chip" data-status="200">200 OK</button>
+              <button class="chip" data-status="201">201</button>
+              <button class="chip" data-status="400">400</button>
+              <button class="chip" data-status="404">404</button>
+              <button class="chip" data-status="500">500</button>
+            </div>
+            <button id="save-config" class="primary-button">Save Config</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <section class="panel request-list-panel" aria-label="Captured requests">
+          <div class="panel-header">
+            <span class="panel-title">
+              Incoming Requests (<span id="request-count">0</span>)
+            </span>
+            <button id="clear-requests" class="ghost-button" disabled>
+              Clear All
+            </button>
+          </div>
+          <div id="request-list" class="request-list">
+            <div class="empty-state">Waiting for requests...</div>
+          </div>
+        </section>
+
+        <section class="panel request-detail-panel" aria-label="Request details">
+          <div class="request-detail__header">
+            <div id="request-title" class="request-title">
+              Select a request to view details
+            </div>
+            <div id="request-meta" class="request-meta"></div>
+          </div>
+          <div class="request-detail__tabs">
+            <button class="tab-button is-active" data-tab="headers">Headers</button>
+            <button class="tab-button" data-tab="query">Query</button>
+            <button class="tab-button" data-tab="body">Body</button>
+          </div>
+          <div class="request-detail__content">
+            <div id="tab-headers" class="tab-panel"></div>
+            <div id="tab-query" class="tab-panel hidden"></div>
+            <div id="tab-body" class="tab-panel hidden"></div>
+          </div>
+          <div class="request-detail__actions">
+            <button id="copy-headers" class="ghost-button" disabled>
+              Copy Headers
+            </button>
+            <button id="copy-curl" class="ghost-button" disabled>
+              Copy as cURL
+            </button>
+            <button id="copy-body" class="ghost-button" disabled>
+              Copy Body
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span id="footer-status">Connecting...</span>
+      <span id="footer-count">0 requests captured</span>
+      <span>Made with care</span>
+    </footer>
+
+    <div id="sr-announcer" class="sr-only" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/static/js/utils.js"></script>
+    <script type="module" src="/static/js/api.js"></script>
+    <script type="module" src="/static/js/websocket.js"></script>
+    <script type="module" src="/static/js/ui.js"></script>
+    <script type="module" src="/static/js/app.js"></script>
+  </body>
+</html>
