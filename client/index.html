@@ -10,6 +10,9 @@
   <body class="app-root text-[#e6edf3] bg-[#0d1117]">
     <header class="app-header">
       <div class="app-header__brand">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+          ≡
+        </button>
         <span class="app-logo">◇</span>
         <div>
           <div class="app-title">HookLens</div>
@@ -22,7 +25,7 @@
         </button>
         <a
           class="icon-button"
-          href="https://github.com/"
+          href="https://github.com/Vansh-Sharma27/hooklens"
           target="_blank"
           rel="noreferrer"
           aria-label="GitHub repository"
@@ -32,7 +35,18 @@
       </div>
     </header>
 
-    <main class="app-main">
+    <div class="app-layout">
+      <aside class="endpoint-sidebar" id="endpoint-sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">My Endpoints</span>
+          <button id="new-endpoint-btn" class="primary-button">+ New</button>
+        </div>
+        <div id="endpoint-list" class="endpoint-list">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </aside>
+
+      <main class="app-main">
       <section class="panel endpoint-panel" aria-label="Webhook endpoint URL">
         <div class="endpoint-panel__header">
           <span class="panel-title">Your Webhook URL</span>
@@ -130,6 +144,22 @@
               Clear All
             </button>
           </div>
+          <div class="search-filter-bar">
+            <input
+              type="text"
+              id="search-input"
+              class="search-input"
+              placeholder="Search requests..."
+              aria-label="Search requests"
+            />
+            <div class="filter-buttons">
+              <button class="filter-chip is-active" data-method="all">All</button>
+              <button class="filter-chip" data-method="GET">GET</button>
+              <button class="filter-chip" data-method="POST">POST</button>
+              <button class="filter-chip" data-method="PUT">PUT</button>
+              <button class="filter-chip" data-method="DELETE">DELETE</button>
+            </div>
+          </div>
           <div id="request-list" class="request-list">
             <div class="empty-state">Waiting for requests...</div>
           </div>
@@ -137,6 +167,9 @@
 
         <section class="panel request-detail-panel" aria-label="Request details">
           <div class="request-detail__header">
+            <button class="mobile-back-btn" id="mobile-back-btn" aria-label="Back to list">
+              ← Back
+            </button>
             <div id="request-title" class="request-title">
               Select a request to view details
             </div>
@@ -165,7 +198,9 @@
           </div>
         </section>
       </section>
-    </main>
+    </div>
+
+    <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <footer class="app-footer">
       <span id="footer-status">Connecting...</span>
@@ -179,6 +214,9 @@
     <script type="module" src="/static/js/api.js"></script>
     <script type="module" src="/static/js/websocket.js"></script>
     <script type="module" src="/static/js/ui.js"></script>
+    <script type="module" src="/static/js/endpoints.js"></script>
+    <script type="module" src="/static/js/search.js"></script>
+    <script type="module" src="/static/js/mobile.js"></script>
     <script type="module" src="/static/js/app.js"></script>
   </body>
 </html>

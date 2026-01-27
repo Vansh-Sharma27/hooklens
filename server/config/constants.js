@@ -2,7 +2,7 @@ module.exports = {
   // Endpoint limits
   MAX_ENDPOINTS: 10000,
   MAX_REQUESTS_PER_ENDPOINT: 100,
-  ENDPOINT_TTL: 24 * 60 * 60 * 1000, // 24 hours
+  ENDPOINT_TTL: 7 * 24 * 60 * 60 * 1000, // 7 days (v1.1: upgraded from 24 hours)
 
   // Request limits
   MAX_BODY_SIZE: 1 * 1024 * 1024, // 1MB
@@ -15,5 +15,9 @@ module.exports = {
   DEFAULT_STATUS_CODE: 200,
   DEFAULT_RESPONSE_BODY: 'OK',
   DEFAULT_CONTENT_TYPE: 'text/plain',
-  MAX_RESPONSE_DELAY: 30000 // 30 seconds
+  MAX_RESPONSE_DELAY: 30000, // 30 seconds
+
+  // Database configuration (v1.1)
+  DB_PATH: process.env.DB_PATH || './data/hooklens.db',
+  CLEANUP_INTERVAL: 60 * 60 * 1000 // 1 hour (v1.1: upgraded from 5 minutes)
 };
