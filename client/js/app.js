@@ -14,6 +14,13 @@ import {
   showCopyFeedback
 } from './ui.js';
 import { copyToClipboard } from './utils.js';
+import {
+  addEndpointId,
+  fetchEndpointList,
+  renderEndpointSidebar
+} from './endpoints.js';
+import { filterRequests, initSearchUI } from './search.js';
+import { initMobile, openDetailPanel } from './mobile.js';
 
 const endpointUrlInput = document.getElementById('endpoint-url');
 const copyEndpointButton = document.getElementById('copy-endpoint');
@@ -34,9 +41,13 @@ const copyBodyButton = document.getElementById('copy-body');
 
 const state = {
   endpoint: null,
+  endpoints: [],
   requests: [],
+  filteredRequests: [],
   selectedRequestId: null,
-  ws: null
+  ws: null,
+  searchQuery: '',
+  methodFilter: 'all'
 };
 
 function getEndpointIdFromPath() {
@@ -54,14 +65,34 @@ function updateEndpointMeta(endpoint) {
 }
 
 function updateFooterCount() {
-  footerCount.textContent = `${state.requests.length} requests captured`;
+  const total = state.requests.length;
+  const filtered = state.filteredRequests.length;
+  
+  if (total === filtered) {
+    footerCount.textContent = `${total} requests captured`;
+  } else {
+    footerCount.textContent = `${filtered} of ${total} requests`;
+  }
+}
+
+function applyFilters() {
+  state.filteredRequests = filterRequests(state.requests, {
+    query: state.searchQuery,
+    method: state.methodFilter
+  });
+  renderRequestList(state.filteredRequests, state.selectedRequestId);
+  updateFooterCount();
 }
 
 function selectRequest(requestId) {
   state.selectedRequestId = requestId;
   const selected = state.requests.find(item => item.id === requestId) || null;
-  renderRequestList(state.requests, state.selectedRequestId);
+  renderRequestList(state.filteredRequests, state.selectedRequestId);
   renderRequestDetail(selected);
+  
+  if (window.innerWidth <= 768 && selected) {
+    openDetailPanel();
+  }
 }
 
 async function initializeEndpoint() {
@@ -77,14 +108,18 @@ async function initializeEndpoint() {
 
   state.endpoint = endpoint;
   state.requests = endpoint.requests || [];
+  state.filteredRequests = state.requests;
+  
+  addEndpointId(endpoint.id);
+  await refreshEndpointSidebar();
+  
   endpointUrlInput.value = endpoint.url;
   responseStatus.value = String(endpoint.config.statusCode);
   responseBody.value = endpoint.config.responseBody;
   responseContentType.value = endpoint.config.contentType;
   responseDelay.value = String(endpoint.config.delay);
   updateEndpointMeta(endpoint);
-  renderRequestList(state.requests, state.selectedRequestId);
-  updateFooterCount();
+  applyFilters();
 
   if (state.requests.length) {
     selectRequest(state.requests[0].id);
@@ -105,12 +140,44 @@ function handleWebSocketMessage(message) {
 
   state.requests.unshift(message.data);
   state.requests = state.requests.slice(0, 100);
-  updateFooterCount();
-  renderRequestList(state.requests, state.selectedRequestId);
+  applyFilters();
   announceNewRequest(message.data);
 
   if (!state.selectedRequestId) {
     selectRequest(message.data.id);
+  }
+}
+
+async function refreshEndpointSidebar() {
+  state.endpoints = await fetchEndpointList();
+  renderEndpointSidebar(state.endpoints, state.endpoint?.id);
+}
+
+async function switchToEndpoint(endpointId) {
+  try {
+    const endpoint = await getEndpoint(endpointId);
+    
+    if (state.ws) {
+      state.ws.updateEndpoint(endpoint.id);
+    }
+    
+    state.endpoint = endpoint;
+    state.requests = endpoint.requests || [];
+    state.selectedRequestId = null;
+    
+    endpointUrlInput.value = endpoint.url;
+    responseStatus.value = String(endpoint.config.statusCode);
+    responseBody.value = endpoint.config.responseBody;
+    responseContentType.value = endpoint.config.contentType;
+    responseDelay.value = String(endpoint.config.delay);
+    updateEndpointMeta(endpoint);
+    applyFilters();
+    renderRequestDetail(null);
+    renderEndpointSidebar(state.endpoints, endpoint.id);
+    
+    window.history.pushState(null, '', `/endpoint/${endpoint.id}`);
+  } catch (error) {
+    console.error('Failed to switch endpoint', error);
   }
 }
 
@@ -187,11 +254,29 @@ clearRequestsButton.addEventListener('click', async () => {
     await clearRequests(state.endpoint.id);
     state.requests = [];
     state.selectedRequestId = null;
-    renderRequestList(state.requests, state.selectedRequestId);
+    applyFilters();
     renderRequestDetail(null);
-    updateFooterCount();
   } catch (error) {
     console.error('Failed to clear requests', error);
+  }
+});
+
+document.getElementById('endpoint-list')?.addEventListener('click', event => {
+  const item = event.target.closest('.endpoint-list-item');
+  if (!item) return;
+  
+  const endpointId = item.getAttribute('data-endpoint-id');
+  if (endpointId && endpointId !== state.endpoint?.id) {
+    switchToEndpoint(endpointId);
+  }
+});
+
+document.getElementById('new-endpoint-btn')?.addEventListener('click', async () => {
+  try {
+    const endpoint = await createEndpoint();
+    window.location.href = `/endpoint/${endpoint.id}`;
+  } catch (error) {
+    console.error('Failed to create endpoint', error);
   }
 });
 
@@ -228,6 +313,19 @@ copyBodyButton.addEventListener('click', async () => {
     showCopyFeedback(copyBodyButton, false);
   }
 });
+
+initMobile();
+
+initSearchUI(
+  query => {
+    state.searchQuery = query;
+    applyFilters();
+  },
+  method => {
+    state.methodFilter = method;
+    applyFilters();
+  }
+);
 
 initializeEndpoint().catch(error => {
   console.error('Failed to initialize endpoint', error);

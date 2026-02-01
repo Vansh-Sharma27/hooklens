@@ -1,5 +1,5 @@
 const express = require('express');
-const store = require('../store/memory');
+const store = require('../store');
 const { broadcast } = require('../websocket/server');
 const { parseRequest } = require('../utils/parser');
 
