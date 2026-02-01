@@ -1,0 +1,40 @@
+{
+  "name": "hooklens",
+  "version": "1.0.0",
+  "description": "Webhook debugger - capture, inspect, and debug HTTP requests in real-time",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "nanoid": "^5.1.6",
+    "ws": "^8.19.0"
+  },
+  "keywords": [
+    "webhook",
+    "debugger",
+    "developer-tools",
+    "testing",
+    "http",
+    "websocket",
+    "real-time",
+    "express",
+    "nodejs"
+  ],
+  "author": "Vansh Sharma",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vansh-Sharma27/hooklens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Vansh-Sharma27/hooklens/issues"
+  },
+  "homepage": "https://github.com/Vansh-Sharma27/hooklens#readme"
+}

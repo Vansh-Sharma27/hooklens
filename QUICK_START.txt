@@ -1,0 +1,181 @@
+================================================================================
+  HOOKLENS - GIT COMMANDS FOR GITHUB SETUP
+================================================================================
+
+IMPORTANT: Run these commands in Git Bash from the hooklens directory.
+
+================================================================================
+STEP 1: NAVIGATE TO PROJECT DIRECTORY
+================================================================================
+
+cd "c:/Users/trash/Webhook Debugger/hooklens"
+
+================================================================================
+STEP 2: INITIALIZE GIT REPOSITORY
+================================================================================
+
+git init
+
+================================================================================
+STEP 3: STAGE ALL FILES
+================================================================================
+
+git add .
+
+# Verify what will be committed
+git status
+
+================================================================================
+STEP 4: CREATE INITIAL COMMIT
+================================================================================
+
+git commit -m "Initial commit: HookLens v1.0.0
+
+- Complete webhook debugger implementation
+- Real-time request capture with WebSocket
+- Configurable response settings
+- Dark theme UI with Tailwind CSS
+- In-memory storage with 24h endpoint expiration
+- Full API documentation
+- MIT License"
+
+================================================================================
+STEP 5: CREATE GITHUB REPOSITORY
+================================================================================
+
+Go to: https://github.com/new
+
+Repository settings:
+- Name: hooklens
+- Description: Webhook debugger - capture, inspect, and debug HTTP requests in real-time
+- Public or Private: Your choice
+- DO NOT check "Initialize with README" (we already have one)
+- DO NOT add .gitignore or license (we already have them)
+
+Click "Create repository"
+
+================================================================================
+STEP 6: ADD REMOTE ORIGIN
+================================================================================
+
+# Add your GitHub repository as remote origin
+git remote add origin https://github.com/Vansh-Sharma27/hooklens.git
+
+# Verify
+git remote -v
+
+================================================================================
+STEP 7: RENAME BRANCH TO MAIN (IF NEEDED)
+================================================================================
+
+git branch -M main
+
+================================================================================
+STEP 8: PUSH TO GITHUB
+================================================================================
+
+git push -u origin main
+
+# You may be prompted for authentication:
+# Username: your-github-username
+# Password: your-personal-access-token (NOT your GitHub password)
+#
+# To create a token: GitHub → Settings → Developer settings → 
+# Personal access tokens → Generate new token
+# Required permission: repo (full control)
+
+================================================================================
+STEP 9: CREATE VERSION TAG (OPTIONAL BUT RECOMMENDED)
+================================================================================
+
+git tag -a v1.0.0 -m "Release v1.0.0: Initial stable release"
+
+git push origin v1.0.0
+
+================================================================================
+STEP 10: CREATE GITHUB RELEASE (OPTIONAL)
+================================================================================
+
+1. Go to: https://github.com/Vansh-Sharma27/hooklens
+2. Click "Releases" (right sidebar)
+3. Click "Draft a new release"
+4. Choose tag: v1.0.0
+5. Release title: HookLens v1.0.0 - Initial Release
+6. Copy description from CHANGELOG.md
+7. Click "Publish release"
+
+================================================================================
+STEP 11: ADD REPOSITORY TOPICS
+================================================================================
+
+On your repository page:
+1. Click gear icon next to "About" section
+2. Add topics: webhook, debugger, nodejs, express, websocket, developer-tools
+3. Add website URL if deployed
+4. Click "Save changes"
+
+================================================================================
+DONE! Your repository is live at:
+https://github.com/Vansh-Sharma27/hooklens
+================================================================================
+
+VERIFICATION CHECKLIST:
+☐ All files visible on GitHub
+☐ README.md displays correctly on homepage
+☐ License badge shows MIT
+☐ Topics/tags are added
+☐ Description is visible
+☐ Release v1.0.0 is published (if you did step 9-10)
+
+================================================================================
+USEFUL COMMANDS FOR FUTURE UPDATES:
+================================================================================
+
+# Check status
+git status
+
+# Stage changes
+git add .
+
+# Commit changes
+git commit -m "Your commit message"
+
+# Push to GitHub
+git push origin main
+
+# Pull latest changes
+git pull origin main
+
+# View commit history
+git log --oneline
+
+# Create new feature branch
+git checkout -b feature/your-feature-name
+
+================================================================================
+TROUBLESHOOTING:
+================================================================================
+
+Authentication Error:
+- Use Personal Access Token instead of password
+- Generate at: Settings → Developer settings → Personal access tokens
+
+Already initialized error:
+- Check if .git folder exists: ls -la
+- If exists, skip git init
+
+Push rejected:
+- Make sure you didn't initialize GitHub repo with README
+- If you did: git pull origin main --allow-unrelated-histories
+- Then: git push origin main
+
+================================================================================
+NEED HELP?
+================================================================================
+
+See detailed guides:
+- GIT_SETUP.md - Complete git workflow
+- DEPLOYMENT.md - Deploy to various platforms
+- README.md - Full project documentation
+
+================================================================================
