@@ -21,6 +21,28 @@ import {
 } from './endpoints.js';
 import { filterRequests, initSearchUI } from './search.js';
 import { initMobile, openDetailPanel } from './mobile.js';
+import {
+  initForwardingUI,
+  setEndpointId as setForwardingEndpointId,
+  loadForwardingConfig,
+  forwardRequest,
+  handleForwardResult
+} from './forwarding.js';
+import {
+  initSignatureUI,
+  setContext as setSignatureContext
+} from './signatures.js';
+import {
+  initDiffUI,
+  setEndpointId as setDiffEndpointId,
+  isDiffMode,
+  selectForDiff,
+  isSelectedForDiff
+} from './diff.js';
+import {
+  initExportUI,
+  setEndpointId as setExportEndpointId
+} from './export.js';
 
 const endpointUrlInput = document.getElementById('endpoint-url');
 const copyEndpointButton = document.getElementById('copy-endpoint');
@@ -80,15 +102,43 @@ function applyFilters() {
     query: state.searchQuery,
     method: state.methodFilter
   });
-  renderRequestList(state.filteredRequests, state.selectedRequestId);
+  renderRequestList(state.filteredRequests, state.selectedRequestId, getDiffModeData());
   updateFooterCount();
 }
 
+function getDiffModeData() {
+  if (!isDiffMode()) return null;
+  
+  // Get selected requests from diff module
+  const selectedForDiff = [];
+  state.requests.forEach(req => {
+    if (isSelectedForDiff(req.id)) {
+      selectedForDiff.push(req.id);
+    }
+  });
+  
+  return {
+    isDiffMode: true,
+    selectedForDiff
+  };
+}
+
 function selectRequest(requestId) {
+  // Handle diff mode selection
+  if (isDiffMode()) {
+    selectForDiff(requestId);
+    return;
+  }
+  
   state.selectedRequestId = requestId;
   const selected = state.requests.find(item => item.id === requestId) || null;
-  renderRequestList(state.filteredRequests, state.selectedRequestId);
+  renderRequestList(state.filteredRequests, state.selectedRequestId, getDiffModeData());
   renderRequestDetail(selected);
+  
+  // Set context for signature verification
+  if (selected && state.endpoint) {
+    setSignatureContext(state.endpoint.id, requestId);
+  }
   
   if (window.innerWidth <= 768 && selected) {
     openDetailPanel();
@@ -119,7 +169,15 @@ async function initializeEndpoint() {
   responseContentType.value = endpoint.config.contentType;
   responseDelay.value = String(endpoint.config.delay);
   updateEndpointMeta(endpoint);
+  
+  // Initialize v1.2 modules with endpoint context
+  setForwardingEndpointId(endpoint.id);
+  loadForwardingConfig(endpoint.config);
+  setDiffEndpointId(endpoint.id);
+  setExportEndpointId(endpoint.id);
+  
   applyFilters();
+  updateClearButtonState();
 
   if (state.requests.length) {
     selectRequest(state.requests[0].id);
@@ -136,15 +194,19 @@ async function initializeEndpoint() {
 }
 
 function handleWebSocketMessage(message) {
-  if (message.type !== 'NEW_REQUEST') return;
+  if (message.type === 'NEW_REQUEST') {
+    state.requests.unshift(message.data);
+    state.requests = state.requests.slice(0, 100);
+    applyFilters();
+    updateClearButtonState();
+    announceNewRequest(message.data);
 
-  state.requests.unshift(message.data);
-  state.requests = state.requests.slice(0, 100);
-  applyFilters();
-  announceNewRequest(message.data);
-
-  if (!state.selectedRequestId) {
-    selectRequest(message.data.id);
+    if (!state.selectedRequestId) {
+      selectRequest(message.data.id);
+    }
+  } else if (message.type === 'FORWARD_RESULT') {
+    // Handle auto-forward results
+    handleForwardResult(message.data);
   }
 }
 
@@ -253,13 +315,21 @@ clearRequestsButton.addEventListener('click', async () => {
   try {
     await clearRequests(state.endpoint.id);
     state.requests = [];
+    state.filteredRequests = [];
     state.selectedRequestId = null;
     applyFilters();
     renderRequestDetail(null);
+    updateClearButtonState();
   } catch (error) {
     console.error('Failed to clear requests', error);
   }
 });
+
+function updateClearButtonState() {
+  if (clearRequestsButton) {
+    clearRequestsButton.disabled = state.requests.length === 0;
+  }
+}
 
 document.getElementById('endpoint-list')?.addEventListener('click', event => {
   const item = event.target.closest('.endpoint-list-item');
@@ -326,6 +396,25 @@ initSearchUI(
     applyFilters();
   }
 );
+
+// Initialize v1.2 features
+initForwardingUI();
+initSignatureUI();
+initDiffUI();
+initExportUI();
+
+// Handle diff mode changes
+document.addEventListener('diffModeChanged', (event) => {
+  // Re-render request list with diff selection indicators
+  renderRequestList(state.filteredRequests, state.selectedRequestId, getDiffModeData());
+});
+
+// Forward request button
+document.getElementById('forward-request')?.addEventListener('click', async () => {
+  if (state.selectedRequestId) {
+    await forwardRequest(state.selectedRequestId);
+  }
+});
 
 initializeEndpoint().catch(error => {
   console.error('Failed to initialize endpoint', error);

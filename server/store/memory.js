@@ -35,7 +35,9 @@ class MemoryStore {
         statusCode: DEFAULT_STATUS_CODE,
         responseBody: DEFAULT_RESPONSE_BODY,
         contentType: DEFAULT_CONTENT_TYPE,
-        delay: 0
+        delay: 0,
+        forwardUrl: null,
+        autoForward: false
       },
       requests: []
     };

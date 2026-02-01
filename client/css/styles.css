@@ -696,3 +696,485 @@ body {
     min-width: 100%;
   }
 }
+
+/* ========================================
+   v1.2 Styles - Forwarding, Signatures, Diff, Export
+   ======================================== */
+
+/* Forwarding Panel */
+.forwarding-panel {
+  margin-top: 16px;
+}
+
+.forwarding-panel__content {
+  padding: 16px;
+}
+
+.forwarding-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field--checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.forwarding-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forward-result {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+  background: #161b22;
+}
+
+.forward-result.forward-success {
+  border-color: #2ea043;
+  background: rgba(46, 160, 67, 0.1);
+}
+
+.forward-result.forward-error {
+  border-color: #da3633;
+  background: rgba(218, 54, 51, 0.1);
+}
+
+.forward-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.forward-latency {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+.forward-target,
+.forward-status {
+  font-size: 12px;
+  color: #e6edf3;
+  margin-top: 4px;
+}
+
+.forward-response {
+  margin-top: 8px;
+}
+
+.forward-response summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #58a6ff;
+}
+
+.forward-response pre {
+  margin-top: 8px;
+  padding: 8px;
+  background: #0d1117;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 11px;
+}
+
+.forward-error-msg {
+  color: #ff7b72;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Signature Verification */
+.signature-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-top: 1px solid #30363d;
+  background: #161b22;
+}
+
+.panel-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6edf3;
+  margin-bottom: 12px;
+}
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.sig-result {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+}
+
+.sig-result.sig-success {
+  border-color: #2ea043;
+  background: rgba(46, 160, 67, 0.1);
+}
+
+.sig-result.sig-error {
+  border-color: #da3633;
+  background: rgba(218, 54, 51, 0.1);
+}
+
+.sig-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sig-provider {
+  font-size: 11px;
+  color: #8b949e;
+  text-transform: uppercase;
+}
+
+.sig-details {
+  font-size: 12px;
+}
+
+.sig-signature {
+  margin-top: 8px;
+}
+
+.sig-signature label {
+  display: block;
+  font-size: 11px;
+  color: #8b949e;
+  margin-bottom: 4px;
+}
+
+.sig-signature code {
+  display: block;
+  padding: 6px 8px;
+  background: #0d1117;
+  border-radius: 4px;
+  font-size: 11px;
+  word-break: break-all;
+  color: #e6edf3;
+}
+
+.sig-extra {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #30363d;
+  font-size: 11px;
+  color: #8b949e;
+}
+
+.sig-error-msg {
+  color: #ff7b72;
+  font-size: 12px;
+}
+
+/* Diff Modal */
+.diff-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.diff-modal.is-open {
+  display: flex;
+}
+
+.diff-modal-content {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-header {
+  padding: 16px;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #161b22;
+  border-radius: 12px 12px 0 0;
+}
+
+.diff-header span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.close-button:hover {
+  background: #21262d;
+  color: #e6edf3;
+}
+
+.diff-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+
+.diff-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.diff-object,
+.diff-body {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.diff-line {
+  padding: 4px 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.diff-indicator {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.diff-added {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+}
+
+.diff-added .diff-indicator {
+  color: #3fb950;
+}
+
+.diff-removed {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+
+.diff-removed .diff-indicator {
+  color: #f85149;
+}
+
+.diff-changed {
+  background: rgba(187, 128, 9, 0.15);
+  color: #d29922;
+}
+
+.diff-changed .diff-indicator {
+  color: #d29922;
+}
+
+.diff-change-detail {
+  margin-left: 28px;
+  margin-top: 4px;
+}
+
+.diff-old {
+  color: #f85149;
+  font-size: 11px;
+}
+
+.diff-new {
+  color: #3fb950;
+  font-size: 11px;
+}
+
+.diff-no-change {
+  color: #8b949e;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+.diff-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Export Modal */
+.export-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.export-modal.is-open {
+  display: flex;
+}
+
+.export-modal-content {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-header {
+  padding: 16px;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #161b22;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-body .field {
+  margin-bottom: 16px;
+}
+
+.modal-body .field:last-child {
+  margin-bottom: 0;
+}
+
+.modal-actions {
+  padding: 16px;
+  border-top: 1px solid #30363d;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: #161b22;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Panel Actions */
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.endpoint-panel__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Notification Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Diff Mode Selection */
+.request-item.diff-selected {
+  background: #1f2937;
+  border: 1px solid #58a6ff;
+}
+
+.request-item.diff-selectable {
+  cursor: pointer;
+}
+
+.request-item.diff-selectable:hover {
+  background: #21262d;
+}
+
+/* Toggle buttons for collapsible panels */
+#toggle-response,
+#toggle-forwarding {
+  font-size: 12px;
+}
+
+/* Mobile responsive updates for v1.2 */
+@media (max-width: 768px) {
+  .signature-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .diff-modal-content,
+  .export-modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .forwarding-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .endpoint-panel__actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
