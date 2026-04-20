@@ -2,26 +2,13 @@ const { nanoid } = require('nanoid');
 
 function parseRequest(req) {
   const now = Date.now();
-  let body = null;
-  let bodySize = 0;
 
-  if (req.body !== undefined && req.body !== null) {
-    if (typeof req.body === 'string') {
-      body = req.body;
-    } else if (Buffer.isBuffer(req.body)) {
-      body = req.body.toString('utf8');
-    } else if (typeof req.body === 'object') {
-      try {
-        body = JSON.stringify(req.body);
-      } catch (error) {
-        body = String(req.body);
-      }
-    } else {
-      body = String(req.body);
-    }
-
-    bodySize = Buffer.byteLength(body || '', 'utf8');
-  }
+  // Read the captured bytes, never the parsed object. Re-serialising a parsed
+  // body changes whitespace, escaping and key order, which breaks any signature
+  // computed over the payload as it was actually sent.
+  const raw = Buffer.isBuffer(req.rawBody) ? req.rawBody : Buffer.alloc(0);
+  const body = raw.length > 0 ? raw.toString('utf8') : null;
+  const bodySize = raw.length;
 
   const contentType = req.get('content-type') || null;
   let isJson = false;

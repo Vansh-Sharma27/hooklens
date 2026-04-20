@@ -9,6 +9,7 @@ const pageRoutes = require('./routes/pages');
 const { errorHandler } = require('./middleware/errorHandler');
 const { rateLimiter } = require('./middleware/rateLimit');
 const { corsMiddleware } = require('./middleware/cors');
+const { bodyParser } = require('./middleware/bodyParser');
 
 const app = express();
 const server = http.createServer(app);
@@ -33,46 +34,7 @@ app.use((req, res, next) => {
 app.use(corsMiddleware);
 app.use(rateLimiter);
 
-// Custom body parser middleware that ensures UTF-8 encoding
-app.use((req, res, next) => {
-  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') {
-    return next();
-  }
-
-  const contentType = req.get('content-type') || 'application/octet-stream';
-  
-  let data = '';
-  req.setEncoding('utf8'); // Force UTF-8 encoding
-  
-  req.on('data', chunk => {
-    data += chunk;
-  });
-  
-  req.on('end', () => {
-    // Try to parse as JSON if content-type indicates JSON
-    if (contentType.includes('application/json')) {
-      try {
-        req.body = JSON.parse(data);
-      } catch (e) {
-        req.body = data; // Fall back to raw string if invalid JSON
-      }
-    } else if (contentType.includes('application/x-www-form-urlencoded')) {
-      // Parse form data
-      const params = new URLSearchParams(data);
-      req.body = Object.fromEntries(params);
-    } else {
-      // Keep as raw string for everything else
-      req.body = data;
-    }
-    next();
-  });
-  
-  req.on('error', (err) => {
-    console.error('Body parsing error:', err);
-    req.body = '';
-    next();
-  });
-});
+app.use(bodyParser);
 
 // Static files
 app.use('/static', express.static(path.join(__dirname, '../client')));
@@ -88,18 +50,20 @@ app.use(errorHandler);
 // Setup WebSocket
 const wss = setupWebSocket(server);
 
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 HookLens running on port ${PORT}`);
-  console.log(`   Dashboard: http://localhost:${PORT}`);
-  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Only bind a port when run directly, so tests can import the app and listen on
+// an ephemeral port of their own.
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`HookLens running on port ${PORT}`);
+    console.log(`   Dashboard: http://localhost:${PORT}`);
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down...');
-  server.close(() => process.exit(0));
-});
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down...');
+    server.close(() => process.exit(0));
+  });
+}
 
 module.exports = { app, server, wss };
