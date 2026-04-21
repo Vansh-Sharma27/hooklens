@@ -201,8 +201,11 @@ function verifyTwilio(request, secret, receivedSignature, config, options) {
 
   // Build signature string: URL + sorted params
   let signatureString = url;
-  
-  if (request.body && request.contentType === 'application/x-www-form-urlencoded') {
+
+  // Senders append a charset to the media type, so match on the type only.
+  const contentType = (request.contentType || '').toLowerCase();
+
+  if (request.body && contentType.includes('application/x-www-form-urlencoded')) {
     // Parse form data and sort keys
     const params = new URLSearchParams(request.body);
     const sortedParams = Array.from(params.entries()).sort((a, b) => a[0].localeCompare(b[0]));

@@ -230,10 +230,12 @@ router.post('/endpoints/:id/requests/:reqId/verify', (req, res) => {
     return res.status(400).json({ error: 'Provider and secret are required' });
   }
 
-  // For Twilio, we need the full URL
+  // Twilio signs the absolute URL the sender posted to. request.path is already
+  // the full captured route (/hook/<id>[/extra][?query]), so it must not be
+  // concatenated onto a second copy of the hook path.
   const baseUrl = getBaseUrl(req);
-  const fullUrl = `${baseUrl}/hook/${req.params.id}${request.path}`;
-  
+  const fullUrl = `${baseUrl}${request.path}`;
+
   const result = verifySignature(provider, request, secret, { fullUrl });
 
   return res.json(result);
