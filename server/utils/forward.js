@@ -16,13 +16,13 @@ async function forwardRequest(request, targetUrl) {
     }
 
     // Build full URL with path and query
-    const url = new URL(request.path, targetUrl);
-    
-    // Prepare headers (exclude Host, keep others)
+    const url = buildForwardUrl(request.path, targetUrl);
+
+    // Prepare headers (exclude hop-by-hop and length, which fetch recomputes)
     const headers = {};
     for (const [key, value] of Object.entries(request.headers)) {
       const lowerKey = key.toLowerCase();
-      if (lowerKey !== 'host' && lowerKey !== 'connection') {
+      if (lowerKey !== 'host' && lowerKey !== 'connection' && lowerKey !== 'content-length') {
         headers[key] = value;
       }
     }
@@ -80,6 +80,40 @@ async function forwardRequest(request, targetUrl) {
   }
 }
 
+/**
+ * Resolve the URL a captured request should be delivered to.
+ *
+ * The captured path is HookLens's own route (/hook/<id>[/extra][?query]), not
+ * anything the sender chose. Resolving it against the target as a relative URL
+ * would discard the target's own path and deliver to /hook/<id> instead, so the
+ * endpoint prefix is stripped and only the remainder is carried over.
+ *
+ * @param {string} capturedPath - request.path as recorded (req.originalUrl)
+ * @param {string} targetUrl - configured destination, path included
+ * @returns {URL} Resolved destination
+ */
+function buildForwardUrl(capturedPath, targetUrl) {
+  const url = new URL(targetUrl);
+  const [rawPath, rawQuery = ''] = String(capturedPath || '').split('?');
+  const subPath = rawPath.replace(/^\/hook\/[^/]+/, '');
+
+  if (subPath) {
+    const base = url.pathname.replace(/\/$/, '');
+    url.pathname = `${base}/${subPath.replace(/^\//, '')}`;
+  }
+
+  if (rawQuery) {
+    const merged = new URLSearchParams(url.search);
+    for (const [key, value] of new URLSearchParams(rawQuery)) {
+      merged.append(key, value);
+    }
+    url.search = merged.toString();
+  }
+
+  return url;
+}
+
 module.exports = {
-  forwardRequest
+  forwardRequest,
+  buildForwardUrl
 };
