@@ -12,8 +12,9 @@ class MemoryStore {
   constructor() {
     this.endpoints = new Map();
 
-    // Cleanup expired endpoints every 5 minutes
-    setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    // Cleanup expired endpoints every 5 minutes. Unref'd so the timer never
+    // keeps the process alive on its own.
+    setInterval(() => this.cleanup(), 5 * 60 * 1000).unref();
   }
 
   createEndpoint() {

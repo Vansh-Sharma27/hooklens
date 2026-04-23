@@ -49,7 +49,7 @@ function setupWebSocket(server) {
       ws.isAlive = false;
       ws.ping();
     });
-  }, 30000);
+  }, 30000).unref();
 
   wss.on('close', () => {
     clearInterval(interval);

@@ -26,7 +26,7 @@ class SQLiteStore {
 
     this.initSchema();
 
-    setInterval(() => this.cleanup(), CLEANUP_INTERVAL);
+    setInterval(() => this.cleanup(), CLEANUP_INTERVAL).unref();
     
     console.log(`SQLite database initialized at ${DB_PATH}`);
   }
