@@ -2,6 +2,11 @@
   HOOKLENS - GIT COMMANDS FOR GITHUB SETUP
 ================================================================================
 
+SUPERSEDED: this file covers the one-time setup used to create the repository
+and push it to GitHub, which is already done. Kept for reference only; the
+feature descriptions below reflect v1.0.0. See README.md for current project
+state and CONTRIBUTING.md for development workflow.
+
 IMPORTANT: Run these commands in Git Bash from the hooklens directory.
 
 ================================================================================

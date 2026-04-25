@@ -69,15 +69,28 @@ npm run dev
 
 ## Testing
 
-Currently, testing is manual. Before submitting a PR:
+```bash
+npm test
+```
 
-1. Test endpoint creation
-2. Test webhook capture
-3. Test real-time updates
-4. Test response configuration
-5. Test all copy/export functions
-6. Test on different browsers
-7. Test error scenarios
+The suite lives in `tests/` and uses the built-in `node:test` runner, so there
+is nothing extra to install. It runs against the in-memory store on an ephemeral
+port and does not touch `data/`.
+
+For a change that fixes a bug, add a test that fails before the fix and passes
+after. For a new feature, cover the expected behaviour plus the validation and
+failure paths.
+
+The server side is covered by tests; the browser UI is not. Before submitting a
+PR, also check manually:
+
+1. Real-time updates arrive over the WebSocket
+2. Response configuration is applied
+3. Copy and export actions work
+4. Behaviour on a narrow viewport
+
+Performance-sensitive changes to the capture path should be measured with the
+harness in `bench/`; see `bench/README.md` for the recorded baseline.
 
 ## Commit Messages
 

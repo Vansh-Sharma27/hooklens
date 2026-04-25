@@ -1,5 +1,11 @@
 # Git Setup Guide for HookLens
 
+> **Superseded.** This file describes the one-time setup used to create the
+> repository and push it to GitHub, which is already done. It is kept for
+> reference only and its feature descriptions reflect v1.0.0. For current
+> project state see `README.md`, and for development workflow see
+> `CONTRIBUTING.md`.
+
 This guide provides step-by-step Git commands to initialize your repository and push to GitHub.
 
 ## Prerequisites

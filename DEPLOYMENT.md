@@ -133,6 +133,11 @@ Fly.io offers global edge deployment with excellent WebSocket support.
    [env]
      NODE_ENV = "production"
      PORT = "8080"
+     DB_PATH = "/data/hooklens.db"
+   
+   [mounts]
+     source = "hooklens_data"
+     destination = "/data"
    
    [[services]]
      http_checks = []
@@ -150,20 +155,23 @@ Fly.io offers global edge deployment with excellent WebSocket support.
        port = 443
    ```
 
-5. **Deploy**
+5. **Create the volume** (required for the default SQLite storage)
+   ```bash
+   flyctl volumes create hooklens_data --size 1
+   ```
+
+6. **Deploy**
    ```bash
    flyctl deploy
    ```
 
-6. **Set Secrets**
+7. **Set Secrets**
    ```bash
    flyctl secrets set BASE_URL=https://hooklens.fly.dev
    ```
 
-7. **Scale** (optional)
-   ```bash
-   flyctl scale count 2
-   ```
+Do not scale beyond one instance. SQLite assumes a single writer, and each
+instance would hold its own database and its own WebSocket subscriptions.
 
 **Cost**: Free tier (3 shared-cpu-1x VMs), paid plans from $2/month
 
@@ -209,31 +217,31 @@ Deploy using Docker containers.
 
 ### Dockerfile
 
-Already in your project root:
+The repository does not ship a Dockerfile. Save this as `Dockerfile` in the
+project root:
 
 ```dockerfile
 FROM node:18-alpine
 
-# Set working directory
+# better-sqlite3 is a native module and is built from source on Alpine
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Install production dependencies only
-RUN npm ci --only=production
-
-# Copy application files
 COPY . .
 
-# Set environment
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Expose port
+# Keep the database on a volume; the container filesystem is not durable
+ENV DB_PATH=/data/hooklens.db
+VOLUME /data
+
 EXPOSE 3000
 
-# Start application
 CMD ["node", "server/index.js"]
 ```
 
@@ -241,15 +249,16 @@ CMD ["node", "server/index.js"]
 
 ```bash
 # Build image
-docker build -t hooklens:1.0.0 .
+docker build -t hooklens:1.2.0 .
 
 # Run container
 docker run -d \
   -p 3000:3000 \
   -e NODE_ENV=production \
   -e BASE_URL=http://localhost:3000 \
+  -v hooklens-data:/data \
   --name hooklens \
-  hooklens:1.0.0
+  hooklens:1.2.0
 
 # Check logs
 docker logs -f hooklens
@@ -266,8 +275,6 @@ docker rm hooklens
 Create `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
-
 services:
   hooklens:
     build: .
@@ -277,7 +284,14 @@ services:
       - NODE_ENV=production
       - BASE_URL=http://localhost:3000
       - RATE_LIMIT_ENABLED=true
+      - STORAGE_TYPE=sqlite
+      - DB_PATH=/data/hooklens.db
+    volumes:
+      - hooklens-data:/data
     restart: unless-stopped
+
+volumes:
+  hooklens-data:
 ```
 
 Run with:
@@ -292,11 +306,11 @@ docker-compose up -d
 docker login
 
 # Tag image
-docker tag hooklens:1.0.0 vanshsharma27/hooklens:1.0.0
-docker tag hooklens:1.0.0 vanshsharma27/hooklens:latest
+docker tag hooklens:1.2.0 vanshsharma27/hooklens:1.2.0
+docker tag hooklens:1.2.0 vanshsharma27/hooklens:latest
 
 # Push
-docker push vanshsharma27/hooklens:1.0.0
+docker push vanshsharma27/hooklens:1.2.0
 docker push vanshsharma27/hooklens:latest
 ```
 
@@ -457,6 +471,27 @@ All platforms support these variables:
 | `NODE_ENV` | No | development | Environment (production/development) |
 | `BASE_URL` | No | Auto-detected | Public URL for generating webhook URLs |
 | `RATE_LIMIT_ENABLED` | No | true | Enable/disable rate limiting |
+| `STORAGE_TYPE` | No | sqlite | `sqlite` (persistent) or `memory` |
+| `DB_PATH` | No | ./data/hooklens.db | SQLite database location |
+
+---
+
+## Storage and Persistence
+
+The default `sqlite` backend writes to `DB_PATH`. Most managed platforms give
+containers an ephemeral filesystem, so **without a mounted volume the database
+is discarded on every deploy, restart and scale event**. Captured requests will
+appear to vanish for no reason.
+
+Pick one before deploying:
+
+- **Attach a persistent volume** and point `DB_PATH` inside it. On Fly.io use
+  `fly volumes create`; on Render use a Disk; on Railway use a volume mount.
+- **Set `STORAGE_TYPE=memory`** and accept that captures are lost on restart.
+  Reasonable for a short-lived debugging instance.
+
+SQLite assumes a single writer process. Do not run more than one instance
+against the same database file.
 
 ---
 
@@ -465,8 +500,13 @@ All platforms support these variables:
 ### Scaling
 
 - **Vertical**: Increase server resources (CPU/RAM)
-- **Horizontal**: Use load balancer with multiple instances
-- **Database**: Switch from in-memory to Redis for persistent storage
+- **Horizontal**: Not supported with the SQLite backend, which assumes one
+  process. Multiple instances would need a shared database and a shared
+  WebSocket subscription registry; neither exists yet.
+- **Throughput**: better-sqlite3 is synchronous, so every store call blocks the
+  event loop. On the reference machine the capture path saturates near 220
+  requests/second with SQLite. Run `node bench/capture.js` to measure on your
+  own hardware.
 
 ### Monitoring
 
@@ -478,9 +518,11 @@ Recommended tools:
 
 ### Backup
 
-For in-memory version (v1.0):
-- No data persistence by design
-- Consider Redis for future versions
+With `STORAGE_TYPE=sqlite`, back up the `DB_PATH` file. The database runs in WAL
+mode, so copy the `-wal` and `-shm` sidecar files alongside it, or use
+`sqlite3 hooklens.db ".backup out.db"` for a consistent snapshot while running.
+
+With `STORAGE_TYPE=memory` there is nothing to back up; data is lost on restart.
 
 ---
 
@@ -496,7 +538,9 @@ For in-memory version (v1.0):
 
 - Monitor endpoint count (max 10,000)
 - Requests per endpoint capped at 100
-- Cleanup runs every 5 minutes
+- Request bodies are capped at 1MB and rejected with `413` above that
+- Expired endpoint cleanup runs hourly on the SQLite store, every 5 minutes on
+  the in-memory store
 
 ### Rate Limiting Too Strict
 

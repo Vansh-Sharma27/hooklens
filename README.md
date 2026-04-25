@@ -1,6 +1,6 @@
 # HookLens - Webhook Debugger
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -10,11 +10,16 @@ A developer tool that provides instant, disposable webhook endpoints for capturi
 
 - **Instant Webhook URLs** - Generate unique public endpoints in one click
 - **Real-time Updates** - See incoming requests appear instantly via WebSocket
-- **Request Inspection** - View headers, query parameters, and body with JSON syntax highlighting
+- **Request Inspection** - View headers, query parameters, and body
 - **Custom Responses** - Configure status codes, response bodies, and delays
-- **Developer Tools** - Copy requests as cURL commands, export as JSON
+- **Persistent Storage** - SQLite by default, 7-day retention across restarts
+- **Multiple Endpoints** - Keep up to 20 endpoints in the sidebar per browser
+- **Search and Filter** - Filter captured requests by text or HTTP method
+- **Request Forwarding** - Relay captured requests to another URL, manually or automatically
+- **Signature Verification** - Check Stripe, GitHub, Slack and Twilio webhook signatures
+- **Request Diffing** - Compare two captured requests side by side
+- **Developer Tools** - Copy requests as cURL, export to a Postman collection
 - **Zero Configuration** - No signup required, works out of the box
-- **Modern UI** - Clean, dark-themed interface optimized for developers
 
 ## Quick Start
 
@@ -68,7 +73,7 @@ Requests appear instantly in the dashboard with full details:
 - HTTP method and path
 - All headers
 - Query parameters
-- Request body (with JSON highlighting)
+- Request body, exactly as received
 - Timestamp and source IP
 
 ### 4. Configure Responses
@@ -84,7 +89,10 @@ Customize how your endpoint responds:
 - **Copy as cURL** - Generate cURL commands to replay requests
 - **Copy Headers/Body** - Quick copy for testing
 - **Clear All** - Reset captured requests
-- **Export** - Download requests as JSON
+- **Compare** - Diff two captured requests
+- **Forward** - Relay a request to another URL
+- **Verify Signature** - Check the request against a provider's signing secret
+- **Export to Postman** - Download the endpoint's requests as a collection
 
 ## Architecture
 
@@ -93,42 +101,60 @@ Customize how your endpoint responds:
 - **Backend**: Node.js, Express.js
 - **WebSocket**: ws library for real-time updates
 - **Frontend**: Vanilla JavaScript (no build step)
-- **Styling**: Tailwind CSS (CDN)
-- **Storage**: In-memory (session-based)
+- **Styling**: Custom CSS (`client/css/styles.css`)
+- **Storage**: SQLite via better-sqlite3 (default), or in-memory
 
 ### Project Structure
 
 ```
 hooklens/
-├── server/                 # Backend
-│   ├── config/            # App configuration
-│   │   └── constants.js   # Limits and defaults
-│   ├── middleware/        # Express middleware
-│   │   ├── cors.js       # CORS handling
+├── server/                  # Backend
+│   ├── config/
+│   │   └── constants.js     # Limits and defaults
+│   ├── middleware/          # Express middleware
+│   │   ├── bodyParser.js    # Raw body capture and size limit
+│   │   ├── cors.js          # CORS handling
 │   │   ├── errorHandler.js
-│   │   └── rateLimit.js  # Rate limiting
-│   ├── routes/           # API routes
-│   │   ├── api.js       # REST endpoints
-│   │   ├── hook.js      # Webhook capture
-│   │   └── pages.js     # HTML serving
-│   ├── store/           # Data layer
-│   │   └── memory.js    # In-memory storage
-│   ├── utils/           # Utilities
-│   │   ├── curl.js      # cURL generation
-│   │   └── parser.js    # Request parsing
-│   ├── websocket/       # WebSocket server
+│   │   └── rateLimit.js     # Rate limiting
+│   ├── routes/
+│   │   ├── api.js           # REST endpoints
+│   │   ├── hook.js          # Webhook capture
+│   │   └── pages.js         # HTML serving
+│   ├── store/               # Data layer
+│   │   ├── index.js         # Backend selection (STORAGE_TYPE)
+│   │   ├── memory.js        # In-memory storage
+│   │   ├── sqlite.js        # SQLite storage
+│   │   └── schema.sql       # Table definitions
+│   ├── utils/
+│   │   ├── curl.js          # cURL generation
+│   │   ├── diff.js          # Request comparison
+│   │   ├── forward.js       # Request forwarding
+│   │   ├── parser.js        # Request parsing
+│   │   ├── postman.js       # Postman collection export
+│   │   └── signatures.js    # Signature verification
+│   ├── websocket/
 │   │   └── server.js
-│   └── index.js         # Entry point
-├── client/              # Frontend
+│   └── index.js             # Entry point
+├── client/                  # Frontend
 │   ├── css/
-│   │   └── styles.css   # Custom styles
+│   │   └── styles.css
 │   ├── js/
-│   │   ├── api.js       # HTTP client
-│   │   ├── app.js       # Main application
-│   │   ├── ui.js        # UI rendering
-│   │   ├── utils.js     # Helper functions
-│   │   └── websocket.js # WebSocket client
-│   └── index.html       # Dashboard
+│   │   ├── api.js           # HTTP client
+│   │   ├── app.js           # Main application
+│   │   ├── diff.js          # Diff UI
+│   │   ├── endpoints.js     # Endpoint sidebar
+│   │   ├── export.js        # Postman export UI
+│   │   ├── forwarding.js    # Forwarding UI
+│   │   ├── mobile.js        # Mobile layout behaviour
+│   │   ├── search.js        # Search and filtering
+│   │   ├── signatures.js    # Signature verification UI
+│   │   ├── ui.js            # UI rendering
+│   │   ├── utils.js         # Helper functions
+│   │   └── websocket.js     # WebSocket client
+│   └── index.html           # Dashboard
+├── tests/                   # Regression tests (node:test)
+├── bench/                   # Load and latency harness
+├── data/                    # SQLite database location
 ├── package.json
 └── README.md
 ```
@@ -153,10 +179,18 @@ POST /api/endpoints
     "statusCode": 200,
     "responseBody": "OK",
     "contentType": "text/plain",
-    "delay": 0
+    "delay": 0,
+    "forwardUrl": null,
+    "autoForward": false
   }
 }
 ```
+
+#### List Endpoints
+```http
+GET /api/endpoints?ids=id1,id2,id3
+```
+Returns summaries for the given ids. Unknown or expired ids are omitted.
 
 #### Get Endpoint Details
 ```http
@@ -199,11 +233,65 @@ DELETE /api/endpoints/:id/requests
 GET /api/endpoints/:id/requests/:requestId/curl
 ```
 
+#### Delete Endpoint
+```http
+DELETE /api/endpoints/:id
+```
+
+#### Configure Forwarding
+```http
+PATCH /api/endpoints/:id/forwarding
+Content-Type: application/json
+
+{
+  "forwardUrl": "http://localhost:4000/webhooks/stripe",
+  "autoForward": true
+}
+```
+Send `"forwardUrl": null` to clear it. The target's own path is preserved; any
+path segments and query string beyond `/hook/:id` are appended to it.
+
+#### Forward a Request
+```http
+POST /api/endpoints/:id/requests/:requestId/forward
+Content-Type: application/json
+
+{ "targetUrl": "http://localhost:4000/webhooks/stripe" }
+```
+`targetUrl` is optional and falls back to the endpoint's configured `forwardUrl`.
+Returns status, latency, response headers and body from the target.
+
+#### Verify Webhook Signature
+```http
+POST /api/endpoints/:id/requests/:requestId/verify
+Content-Type: application/json
+
+{ "provider": "stripe", "secret": "whsec_..." }
+```
+Supported providers: `stripe`, `github`, `slack`, `twilio`. Returns `valid`
+plus the expected and received signatures. Verification runs against the bytes
+exactly as received, which is what the sending service signed.
+
+#### Compare Two Requests
+```http
+POST /api/endpoints/:id/diff
+Content-Type: application/json
+
+{ "requestId1": "abc", "requestId2": "def" }
+```
+
+#### Export to Postman
+```http
+GET /api/endpoints/:id/export/postman?name=My%20Collection&baseUrl=https://example.com
+```
+Returns a Postman Collection v2.1.0 document as a file download.
+
 #### Capture Webhook
 ```http
 ANY /hook/:id
 ```
-Accepts any HTTP method and captures the complete request.
+Accepts any HTTP method and captures the complete request. Bodies larger than
+`MAX_BODY_SIZE` are rejected with `413`.
 
 ### WebSocket
 
@@ -232,6 +320,20 @@ Receive new requests:
 }
 ```
 
+When auto-forwarding is enabled, the result arrives separately:
+```json
+{
+  "type": "FORWARD_RESULT",
+  "data": {
+    "requestId": "req_abc123",
+    "result": { "success": true, "statusCode": 200, "latency": 42 }
+  }
+}
+```
+
+Other client messages: `{"type":"UNSUBSCRIBE"}` and `{"type":"PING"}`, which is
+answered with `{"type":"PONG"}`.
+
 ## Configuration
 
 ### Environment Variables
@@ -243,19 +345,42 @@ PORT=3000
 NODE_ENV=production
 BASE_URL=https://your-domain.com
 RATE_LIMIT_ENABLED=true
+
+# Storage
+STORAGE_TYPE=sqlite          # sqlite (default) or memory
+DB_PATH=./data/hooklens.db   # SQLite database path
 ```
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3000` | Listen port |
+| `NODE_ENV` | `development` | Stack traces are omitted in `production` |
+| `BASE_URL` | request host | Overrides the URL shown for endpoints |
+| `RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable rate limiting |
+| `STORAGE_TYPE` | `sqlite` | `sqlite` persists, `memory` does not |
+| `DB_PATH` | `./data/hooklens.db` | SQLite file location |
 
 ### Limits
 
 Default configuration (see `server/config/constants.js`):
 
 - **Max Endpoints**: 10,000 concurrent
-- **Max Requests per Endpoint**: 100 (FIFO)
-- **Endpoint TTL**: 24 hours
-- **Max Body Size**: 1MB
-- **Rate Limit**: 100 requests/minute per IP
+- **Max Requests per Endpoint**: 100 (oldest evicted first)
+- **Endpoint TTL**: 7 days
+- **Max Body Size**: 1MB, enforced — larger bodies are rejected with `413`
+- **Max Response Delay**: 30 seconds
+- **Rate Limit**: 100 requests/minute per IP, applied to all routes including
+  `/hook/:id`. A sender bursting above this receives `429` and those webhooks
+  are not captured. Raise `RATE_LIMIT_MAX` or set `RATE_LIMIT_ENABLED=false`
+  when replaying large batches.
 
 ## Deployment
+
+> **Persistence:** the default `sqlite` backend writes to `DB_PATH`
+> (`./data/hooklens.db`). Most managed platforms use ephemeral filesystems, so
+> without a mounted volume the database is discarded on every deploy and
+> restart. Attach a persistent volume and point `DB_PATH` at it, or set
+> `STORAGE_TYPE=memory` and accept that captures are lost on restart.
 
 ### Railway
 
@@ -278,21 +403,27 @@ railway up
 
 ### Docker
 
+Save this as `Dockerfile` in the project root. `better-sqlite3` is a native
+module, so the build toolchain is needed on Alpine:
+
 ```dockerfile
 FROM node:18-alpine
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 COPY . .
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV DB_PATH=/data/hooklens.db
+VOLUME /data
 EXPOSE 3000
 CMD ["node", "server/index.js"]
 ```
 
 ```bash
 docker build -t hooklens .
-docker run -p 3000:3000 hooklens
+docker run -p 3000:3000 -v hooklens-data:/data hooklens
 ```
 
 ## Development
@@ -311,10 +442,32 @@ npm start
 
 - **No build step** - Frontend uses vanilla JavaScript
 - **ES Modules** - Client-side JavaScript uses ES6 modules
-- **Session-based** - Data stored in-memory (lost on restart)
+- **Persistent by default** - SQLite storage survives restarts; set
+  `STORAGE_TYPE=memory` for throwaway runs
 - **Security headers** - CSP, X-Frame-Options, etc. included
 
 ## Testing
+
+```bash
+npm test
+```
+
+Runs the regression suite in `tests/` with the built-in `node:test` runner. It
+covers raw body capture, signature verification for all four providers, body
+size limits, and forward URL construction. Tests use the in-memory store and
+bind an ephemeral port, so they do not touch `data/`.
+
+### Benchmarks
+
+```bash
+node bench/store.js      # persistence cost, no HTTP
+node bench/capture.js    # capture latency under offered load
+node bench/fanout.js     # webhook accepted -> dashboard notified
+```
+
+See `bench/README.md` for methodology and a recorded baseline. Note that SQLite
+storage is synchronous and saturates near 220 requests/second on the reference
+machine; the in-memory backend is far faster but does not persist.
 
 ### Manual Testing
 
@@ -341,30 +494,45 @@ Configure webhook URLs in:
 ## Security Considerations
 
 - **Rate Limiting**: Enabled by default (100 req/min per IP)
-- **Endpoint IDs**: 12-char random strings (unguessable)
-- **Body Size Limits**: 1MB maximum
-- **No PII Logging**: Request bodies not logged server-side
-- **CORS**: Permissive for webhook senders
+- **Endpoint IDs**: 12-char nanoid strings. The id is the only access control —
+  anyone who has it can read every request captured by that endpoint, over both
+  the REST API and the WebSocket. Treat endpoint URLs as secrets.
+- **Body Size Limits**: 1MB maximum, enforced
+- **No PII Logging**: Request bodies are not logged server-side
+- **CORS**: Permissive, so webhook senders are never blocked
 - **CSP Headers**: Content Security Policy enforced
 
-## Known Limitations (v1.0)
+### Forwarding
 
-- **In-Memory Storage**: Requests lost on server restart
-- **No Authentication**: Endpoints are public (by design)
-- **Single Endpoint per Session**: Browser-based, one active endpoint
-- **No Persistence**: 24-hour endpoint expiration
+Request forwarding performs an outbound HTTP request to whatever URL is
+configured, and replays the captured headers — including `Authorization` and
+`Cookie` — to that target. There is currently no restriction on the destination,
+so a publicly reachable instance lets anyone who can create an endpoint make the
+server issue requests to addresses it can reach, including private ones. Run
+HookLens locally, or behind authentication, if that matters to you.
+
+## Known Limitations
+
+- **No Authentication**: Endpoints are public by design; the id is the capability
+- **Unrestricted Forward Targets**: See the note above
+- **Text Bodies**: Captured bodies are stored as UTF-8 text, so binary payloads
+  are not preserved byte-for-byte
+- **Single-Node**: SQLite storage assumes one process; there is no clustering
+- **JSON Syntax Highlighting**: Not currently working — request bodies render as
+  plain text
 
 ## Roadmap
 
-### v1.1 - Persistence
-- Redis/SQLite storage with 7-day retention
+### v1.1 - Persistence (shipped)
+- SQLite storage with 7-day retention
 - Multiple endpoints per session
 - Request search and filtering
 
-### v1.2 - Power Features
-- Request forwarding to localhost
+### v1.2 - Power Features (shipped)
+- Request forwarding
 - Webhook signature verification helpers
 - Request diffing (compare two requests)
+- Export to Postman collection
 
 ### v2.0 - Collaboration
 - User accounts
