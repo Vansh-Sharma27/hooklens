@@ -112,7 +112,7 @@ function verifyStripe(request, secret, receivedSignature, config) {
   const payload = `${timestamp}.${request.body || ''}`;
   const expectedSignature = hmac(config.algorithm, secret, payload);
 
-  const valid = signature === expectedSignature;
+  const valid = safeEqual(signature, expectedSignature);
 
   return {
     valid,
@@ -133,7 +133,7 @@ function verifyGitHub(request, secret, receivedSignature, config) {
   // Compute expected signature
   const expectedSignature = hmac(config.algorithm, secret, request.body || '');
 
-  const valid = signature === expectedSignature;
+  const valid = safeEqual(signature, expectedSignature);
 
   return {
     valid,
@@ -172,7 +172,7 @@ function verifySlack(request, secret, receivedSignature, config) {
   const signatureBase = `v0:${timestamp}:${request.body || ''}`;
   const expectedSignature = hmac(config.algorithm, secret, signatureBase);
 
-  const valid = signature === expectedSignature;
+  const valid = safeEqual(signature, expectedSignature);
 
   return {
     valid,
@@ -221,7 +221,7 @@ function verifyTwilio(request, secret, receivedSignature, config, options) {
     .update(signatureString)
     .digest('base64');
 
-  const valid = receivedSignature === expectedSignature;
+  const valid = safeEqual(receivedSignature, expectedSignature);
 
   return {
     valid,
@@ -243,6 +243,27 @@ function hmac(algorithm, secret, data) {
     .createHmac(algorithm, secret)
     .update(data, 'utf8')
     .digest('hex');
+}
+
+/**
+ * Compare two signatures without leaking where they first differ.
+ *
+ * A plain === returns as soon as it finds a mismatched byte, so the time taken
+ * reveals how much of a guess was correct and lets a caller recover a valid
+ * signature byte by byte. Length is compared first and non-constant-time, which
+ * is fine: signature length is fixed by the algorithm and is not a secret.
+ *
+ * @param {string} received - Signature from the request
+ * @param {string} expected - Signature computed locally
+ * @returns {boolean}
+ */
+function safeEqual(received, expected) {
+  const a = Buffer.from(String(received ?? ''), 'utf8');
+  const b = Buffer.from(String(expected ?? ''), 'utf8');
+
+  if (a.length !== b.length) return false;
+
+  return crypto.timingSafeEqual(a, b);
 }
 
 /**
