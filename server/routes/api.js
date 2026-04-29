@@ -3,6 +3,7 @@ const store = require('../store');
 const { MAX_RESPONSE_DELAY, MAX_FORWARD_URL_LENGTH } = require('../config/constants');
 const { generateCurl } = require('../utils/curl');
 const { forwardRequest } = require('../utils/forward');
+const { ALLOWED_PROTOCOLS } = require('../utils/forwardPolicy');
 const { verifySignature } = require('../utils/signatures');
 const { diffRequests } = require('../utils/diff');
 const { generatePostmanCollection, getExportFilename } = require('../utils/postman');
@@ -160,10 +161,20 @@ router.patch('/endpoints/:id/forwarding', (req, res) => {
         return res.status(400).json({ error: 'Invalid forwardUrl' });
       }
       
+      let parsed;
       try {
-        new URL(forwardUrl);
+        parsed = new URL(forwardUrl);
       } catch (err) {
         return res.status(400).json({ error: 'Invalid forwardUrl format' });
+      }
+
+      // Scheme is cheap to check here. Whether the destination address itself
+      // is permitted is decided at forward time, since DNS can change in
+      // between and the check needs to resolve the host.
+      if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+        return res.status(400).json({
+          error: `Unsupported forwardUrl protocol: ${parsed.protocol}`
+        });
       }
     }
     

@@ -1,4 +1,5 @@
 const { FORWARD_TIMEOUT } = require('../config/constants');
+const { assertTargetAllowed } = require('./forwardPolicy');
 
 /**
  * Forward a captured request to a target URL
@@ -17,6 +18,9 @@ async function forwardRequest(request, targetUrl) {
 
     // Build full URL with path and query
     const url = buildForwardUrl(request.path, targetUrl);
+
+    // Check the destination before any connection is opened
+    await assertTargetAllowed(url);
 
     // Prepare headers (exclude hop-by-hop and length, which fetch recomputes)
     const headers = {};

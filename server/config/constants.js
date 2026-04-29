@@ -25,6 +25,15 @@ module.exports = {
   FORWARD_TIMEOUT: 30000, // 30 seconds
   MAX_FORWARD_URL_LENGTH: 2048,
 
+  // Forwarding to loopback and private addresses is the normal local workflow,
+  // so it is permitted by default. On a publicly reachable instance it lets
+  // anyone who can create an endpoint reach the internal network, so it is
+  // disabled under NODE_ENV=production unless explicitly re-enabled.
+  FORWARD_ALLOW_PRIVATE:
+    process.env.FORWARD_ALLOW_PRIVATE !== undefined
+      ? process.env.FORWARD_ALLOW_PRIVATE === 'true'
+      : process.env.NODE_ENV !== 'production',
+
   // Signature verification (v1.2)
   SIGNATURE_PROVIDERS: ['stripe', 'github', 'slack', 'twilio'],
   SIGNATURE_TIMESTAMP_TOLERANCE: 300 // 5 minutes (for replay protection)

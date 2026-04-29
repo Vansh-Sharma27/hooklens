@@ -114,6 +114,30 @@ test('forwarding carries the captured query string to the target', async () => {
   }
 });
 
+test('a non-http forwardUrl scheme is rejected at config time', async () => {
+  const endpoint = await createEndpoint(app.baseUrl);
+
+  const res = await fetch(`${app.baseUrl}/api/endpoints/${endpoint.id}/forwarding`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ forwardUrl: 'file:///etc/passwd' })
+  });
+
+  assert.strictEqual(res.status, 400);
+  const payload = await res.json();
+  assert.match(payload.error, /protocol/i);
+});
+
+test('forwarding to a non-http scheme fails rather than being attempted', async () => {
+  const endpoint = await createEndpoint(app.baseUrl);
+  const captured = await captureOne(endpoint.id);
+
+  const result = await forwardTo(endpoint.id, captured.id, 'file:///etc/passwd');
+
+  assert.strictEqual(result.success, false);
+  assert.match(result.error, /protocol/i);
+});
+
 test('a failing target is reported, not thrown', async () => {
   const endpoint = await createEndpoint(app.baseUrl);
   const captured = await captureOne(endpoint.id);
