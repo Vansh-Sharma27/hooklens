@@ -9,7 +9,13 @@ module.exports = {
 
   // Rate limiting
   RATE_LIMIT_WINDOW: 60 * 1000, // 1 minute
-  RATE_LIMIT_MAX: 100, // requests per window
+  RATE_LIMIT_MAX: 100, // dashboard/API requests per window, per IP
+
+  // Webhook capture gets its own, much larger budget, keyed per endpoint.
+  // Senders legitimately burst (batch replays, redeliveries) and throttling
+  // them loses exactly the requests the tool exists to record. Keying per
+  // endpoint stops one busy endpoint from starving the others.
+  HOOK_RATE_LIMIT_MAX: Number(process.env.HOOK_RATE_LIMIT_MAX || 1000),
 
   // Response defaults
   DEFAULT_STATUS_CODE: 200,

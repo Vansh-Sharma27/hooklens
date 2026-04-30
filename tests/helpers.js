@@ -1,6 +1,9 @@
 // Test harness config must be set before the app (and its store) is required.
-process.env.STORAGE_TYPE = 'memory';
-process.env.RATE_LIMIT_ENABLED = 'false';
+// A test file that needs different values sets them before requiring this.
+process.env.STORAGE_TYPE = process.env.STORAGE_TYPE || 'memory';
+if (process.env.RATE_LIMIT_ENABLED === undefined) {
+  process.env.RATE_LIMIT_ENABLED = 'false';
+}
 
 const http = require('http');
 
