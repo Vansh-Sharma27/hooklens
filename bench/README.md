@@ -57,12 +57,12 @@ machine-specific; re-record before drawing conclusions elsewhere.
 
 | Measurement | memory | sqlite |
 |---|---|---|
-| `addRequest` p50 / p99 | ~0.00 / 0.00 ms | 1.0 / 5.9 ms (max 204) |
-| `getEndpoint` p50 | ~0.00 ms | 0.7 ms |
-| Store work per capture | negligible | ~2.15 ms |
-| Capture p50 @ 100/s | 2.4 ms | 4.7 ms |
-| Capture p50 / p95 @ 250/s | 3.0 / 7.1 ms | 41.6 / 74.2 ms |
-| Saturation point | > 2000/s | ~220 req/s |
+| `addRequest` p50 / p99 / max | ~0.00 / 0.00 / 0.6 ms | 0.2 / 1.3 / 10.8 ms |
+| `getEndpoint` p50 | ~0.00 ms | 0.5 ms |
+| Store work per capture | negligible | ~0.84 ms |
+| Capture p50 @ 100/s | 2.4 ms | 4.3 ms |
+| Capture p50 / p95 @ 250/s | 3.0 / 7.1 ms | 6.1 / 16.6 ms |
+| Saturation point | > 2000/s | ~300 req/s |
 
 Fanout (sqlite) was flat across subscriber counts, no loss:
 
@@ -72,6 +72,23 @@ Fanout (sqlite) was flat across subscriber counts, no loss:
 | 10 | 2.6 ms | 5.1 ms |
 | 50 | 2.5 ms | 4.7 ms |
 
-The 204 ms `addRequest` outlier is consistent with a WAL checkpoint. Because the
-driver is synchronous, a stall of that length blocks every other connection for
-its duration.
+### Variance
+
+`store.js` is stable: it runs thousands of iterations with no network involved.
+
+`capture.js` is not. On a desktop with other processes running, the 250/s step
+has been seen anywhere between 6 ms and 59 ms at p50 across consecutive runs of
+identical code. Run it at least twice and treat a single run as indicative
+rather than conclusive. The saturation point is the more stable signal and has
+held at roughly 300 req/s across runs.
+
+### Prior baseline
+
+Before the store was optimised, `addRequest` cost 1.0 ms at p50 and 5.9 ms at
+p99 with a 204 ms maximum, store work totalled ~2.15 ms per capture, and the
+capture path saturated near 220 req/s. The cost was an endpoint existence check
+that loaded and deserialised up to `MAX_REQUESTS_PER_ENDPOINT` rows, plus SQL
+recompiled on every call.
+
+The remaining ceiling is structural: better-sqlite3 is synchronous, so store
+time is time no other connection can use.
