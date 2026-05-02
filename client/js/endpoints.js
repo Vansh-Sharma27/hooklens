@@ -1,3 +1,5 @@
+import { escapeHtml } from './utils.js';
+
 const STORAGE_KEY = 'hooklens_endpoints';
 const MAX_STORED = 20;
 
@@ -59,10 +61,10 @@ export function renderEndpointSidebar(endpoints, currentId) {
       const hours = Math.floor((expiresIn % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
       return `
-        <div class="endpoint-list-item ${isActive ? 'is-active' : ''}" data-endpoint-id="${endpoint.id}">
-          <div class="endpoint-list-item__id">${endpoint.id}</div>
+        <div class="endpoint-list-item ${isActive ? 'is-active' : ''}" data-endpoint-id="${escapeHtml(endpoint.id)}">
+          <div class="endpoint-list-item__id">${escapeHtml(endpoint.id)}</div>
           <div class="endpoint-list-item__meta">
-            ${endpoint.requestCount} requests · ${days}d ${hours}h left
+            ${escapeHtml(endpoint.requestCount)} requests · ${days}d ${hours}h left
           </div>
         </div>
       `;

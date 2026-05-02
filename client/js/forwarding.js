@@ -114,15 +114,19 @@ export function renderForwardResult(result) {
 
   const successClass = result.success ? 'forward-success' : 'forward-error';
   
+  // Everything below the header comes from the forward target or from the
+  // configured URL, so none of it can be trusted. statusText in particular is
+  // the remote server's HTTP status line, which the target controls outright
+  // and which auto-forwarding puts on screen without any user action.
   resultContainer.className = `forward-result ${successClass}`;
   resultContainer.innerHTML = `
     <div class="forward-result-header">
       <strong>${result.success ? '✓ Forwarded' : '✗ Failed'}</strong>
-      <span class="forward-latency">${result.latency}ms</span>
+      <span class="forward-latency">${escapeHtml(result.latency)}ms</span>
     </div>
-    <div class="forward-target">${result.targetUrl || 'N/A'}</div>
+    <div class="forward-target">${escapeHtml(result.targetUrl || 'N/A')}</div>
     ${result.success ? `
-      <div class="forward-status">Status: ${result.statusCode} ${result.statusText || ''}</div>
+      <div class="forward-status">Status: ${escapeHtml(result.statusCode)} ${escapeHtml(result.statusText || '')}</div>
       ${result.responseBody ? `
         <details class="forward-response">
           <summary>Response Body</summary>
@@ -130,7 +134,7 @@ export function renderForwardResult(result) {
         </details>
       ` : ''}
     ` : `
-      <div class="forward-error-msg">${result.error || 'Unknown error'}</div>
+      <div class="forward-error-msg">${escapeHtml(result.error || 'Unknown error')}</div>
     `}
   `;
   
@@ -182,8 +186,9 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-function escapeHtml(text) {
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = String(value);
   return div.innerHTML;
 }

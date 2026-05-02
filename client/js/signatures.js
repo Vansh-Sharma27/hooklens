@@ -72,7 +72,7 @@ export function renderVerificationResult(result) {
   resultContainer.innerHTML = `
     <div class="sig-result-header">
       <strong>${statusIcon} ${statusText}</strong>
-      <span class="sig-provider">${result.provider}</span>
+      <span class="sig-provider">${escapeHtml(result.provider)}</span>
     </div>
     ${result.error ? `
       <div class="sig-error-msg">${escapeHtml(result.error)}</div>
@@ -89,8 +89,8 @@ export function renderVerificationResult(result) {
         ${result.details ? `
           <div class="sig-extra">
             ${result.details.timestamp ? `
-              <div>Timestamp: ${new Date(result.details.timestamp * 1000).toLocaleString()}</div>
-              <div>Age: ${result.details.age} seconds</div>
+              <div>Timestamp: ${escapeHtml(new Date(result.details.timestamp * 1000).toLocaleString())}</div>
+              <div>Age: ${escapeHtml(result.details.age)} seconds</div>
             ` : ''}
           </div>
         ` : ''}
@@ -118,10 +118,10 @@ function showError(message) {
   resultContainer.style.display = 'block';
 }
 
-function escapeHtml(text) {
-  if (!text) return '';
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = String(value);
   return div.innerHTML;
 }
 
