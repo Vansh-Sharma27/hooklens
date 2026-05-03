@@ -145,6 +145,32 @@ function selectRequest(requestId) {
   }
 }
 
+// Everything that has to happen when the active endpoint changes. Both the
+// initial load and the sidebar switch go through here, so a module that needs
+// endpoint context is wired up in exactly one place. Keeping two copies of this
+// is what previously left forwarding, diff and export pointing at the endpoint
+// the user had switched away from.
+function applyEndpoint(endpoint) {
+  state.endpoint = endpoint;
+  state.requests = endpoint.requests || [];
+  state.selectedRequestId = null;
+
+  endpointUrlInput.value = endpoint.url;
+  responseStatus.value = String(endpoint.config.statusCode);
+  responseBody.value = endpoint.config.responseBody;
+  responseContentType.value = endpoint.config.contentType;
+  responseDelay.value = String(endpoint.config.delay);
+  updateEndpointMeta(endpoint);
+
+  setForwardingEndpointId(endpoint.id);
+  loadForwardingConfig(endpoint.config);
+  setDiffEndpointId(endpoint.id);
+  setExportEndpointId(endpoint.id);
+
+  applyFilters();
+  updateClearButtonState();
+}
+
 async function initializeEndpoint() {
   const endpointId = getEndpointIdFromPath();
   let endpoint;
@@ -156,28 +182,10 @@ async function initializeEndpoint() {
     window.history.replaceState(null, '', `/endpoint/${endpoint.id}`);
   }
 
-  state.endpoint = endpoint;
-  state.requests = endpoint.requests || [];
-  state.filteredRequests = state.requests;
-  
+  applyEndpoint(endpoint);
+
   addEndpointId(endpoint.id);
   await refreshEndpointSidebar();
-  
-  endpointUrlInput.value = endpoint.url;
-  responseStatus.value = String(endpoint.config.statusCode);
-  responseBody.value = endpoint.config.responseBody;
-  responseContentType.value = endpoint.config.contentType;
-  responseDelay.value = String(endpoint.config.delay);
-  updateEndpointMeta(endpoint);
-  
-  // Initialize v1.2 modules with endpoint context
-  setForwardingEndpointId(endpoint.id);
-  loadForwardingConfig(endpoint.config);
-  setDiffEndpointId(endpoint.id);
-  setExportEndpointId(endpoint.id);
-  
-  applyFilters();
-  updateClearButtonState();
 
   if (state.requests.length) {
     selectRequest(state.requests[0].id);
@@ -218,25 +226,15 @@ async function refreshEndpointSidebar() {
 async function switchToEndpoint(endpointId) {
   try {
     const endpoint = await getEndpoint(endpointId);
-    
+
     if (state.ws) {
       state.ws.updateEndpoint(endpoint.id);
     }
-    
-    state.endpoint = endpoint;
-    state.requests = endpoint.requests || [];
-    state.selectedRequestId = null;
-    
-    endpointUrlInput.value = endpoint.url;
-    responseStatus.value = String(endpoint.config.statusCode);
-    responseBody.value = endpoint.config.responseBody;
-    responseContentType.value = endpoint.config.contentType;
-    responseDelay.value = String(endpoint.config.delay);
-    updateEndpointMeta(endpoint);
-    applyFilters();
+
+    applyEndpoint(endpoint);
     renderRequestDetail(null);
     renderEndpointSidebar(state.endpoints, endpoint.id);
-    
+
     window.history.pushState(null, '', `/endpoint/${endpoint.id}`);
   } catch (error) {
     console.error('Failed to switch endpoint', error);

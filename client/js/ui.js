@@ -12,6 +12,7 @@ const copyCurlButton = document.getElementById('copy-curl');
 const copyBodyButton = document.getElementById('copy-body');
 const forwardButton = document.getElementById('forward-request');
 const srAnnouncer = document.getElementById('sr-announcer');
+const detailPanel = document.getElementById('request-detail');
 
 export function renderRequestList(requests, selectedId, diffModeData = null) {
   requestCount.textContent = String(requests.length);
@@ -60,7 +61,8 @@ export function renderRequestDetail(request) {
     tabQuery.innerHTML = '';
     tabBody.innerHTML = '';
     setDetailActionsEnabled(false);
-    
+    if (detailPanel) delete detailPanel.dataset.requestId;
+
     // Hide signature panel when no request selected
     const signaturePanel = document.getElementById('signature-panel');
     if (signaturePanel) {
@@ -79,7 +81,11 @@ export function renderRequestDetail(request) {
   tabBody.innerHTML = renderBody(request);
 
   setDetailActionsEnabled(true);
-  
+
+  // Lets forwarding.js tell whether an auto-forward result belongs to the
+  // request currently on screen.
+  if (detailPanel) detailPanel.dataset.requestId = request.id;
+
   // Show signature panel when request is selected
   const signaturePanel = document.getElementById('signature-panel');
   if (signaturePanel) {
@@ -151,26 +157,38 @@ function renderBody(request) {
   return `<pre>${escapeHtml(request.body)}</pre>`;
 }
 
+// Matches one JSON token: a string (optionally followed by the colon that makes
+// it a key), a literal, or a number.
+const JSON_TOKEN =
+  /"(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+
+function jsonTokenClass(token) {
+  if (token === 'true' || token === 'false') return 'json-boolean';
+  if (token === 'null') return 'json-null';
+  if (!token.startsWith('"')) return 'json-number';
+  return token.trimEnd().endsWith(':') ? 'json-key' : 'json-string';
+}
+
+// Tokenises first and escapes each piece as it is emitted.
+//
+// Escaping up front cannot work here: it turns every " into &quot;, so a pattern
+// looking for string literals no longer matches anything. Everything between
+// matches is escaped too, so no input reaches innerHTML unescaped.
 function highlightJson(json) {
-  const escaped = escapeHtml(json);
-  return escaped.replace(
-    /(\"(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\\"])*\"(\\s*:)?|\\b(true|false|null)\\b|\\b-?\\d+(?:\\.\\d+)?\\b)/g,
-    match => {
-      if (match === 'true' || match === 'false') {
-        return `<span class="json-boolean">${match}</span>`;
-      }
-      if (match === 'null') {
-        return `<span class="json-null">${match}</span>`;
-      }
-      if (match.startsWith('"') && match.endsWith('":')) {
-        return `<span class="json-key">${match}</span>`;
-      }
-      if (match.startsWith('"')) {
-        return `<span class="json-string">${match}</span>`;
-      }
-      return `<span class="json-number">${match}</span>`;
-    }
-  );
+  const source = String(json);
+  let out = '';
+  let lastIndex = 0;
+  let match;
+
+  JSON_TOKEN.lastIndex = 0;
+
+  while ((match = JSON_TOKEN.exec(source)) !== null) {
+    out += escapeHtml(source.slice(lastIndex, match.index));
+    out += `<span class="${jsonTokenClass(match[0])}">${escapeHtml(match[0])}</span>`;
+    lastIndex = JSON_TOKEN.lastIndex;
+  }
+
+  return out + escapeHtml(source.slice(lastIndex));
 }
 
 function setDetailActionsEnabled(enabled) {
