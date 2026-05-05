@@ -2,6 +2,7 @@
  * Webhook Signature Verification UI
  * Supports Stripe, GitHub, Slack, and Twilio
  */
+import { escapeHtml } from './utils.js';
 
 let currentEndpointId = null;
 let currentRequestId = null;
@@ -118,23 +119,3 @@ function showError(message) {
   resultContainer.style.display = 'block';
 }
 
-function escapeHtml(value) {
-  if (value === null || value === undefined) return '';
-  const div = document.createElement('div');
-  div.textContent = String(value);
-  return div.innerHTML;
-}
-
-export function showSignaturePanel() {
-  const panel = document.getElementById('signature-panel');
-  if (panel) {
-    panel.style.display = 'block';
-  }
-}
-
-export function hideSignaturePanel() {
-  const panel = document.getElementById('signature-panel');
-  if (panel) {
-    panel.style.display = 'none';
-  }
-}

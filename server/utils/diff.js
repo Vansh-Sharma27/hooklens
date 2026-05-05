@@ -99,34 +99,4 @@ function diffBodies(request1, request2) {
   return Diff.diffLines(body1, body2);
 }
 
-/**
- * Generate a summary of differences
- * @param {Object} request1 - First request
- * @param {Object} request2 - Second request
- * @returns {Object} Summary object
- */
-function diffSummary(request1, request2) {
-  const diff = diffRequests(request1, request2);
-  
-  return {
-    id1: request1.id,
-    id2: request2.id,
-    timestamp1: request1.timestamp,
-    timestamp2: request2.timestamp,
-    methodChanged: diff.summary.methodChanged,
-    pathChanged: diff.summary.pathChanged,
-    headersChanged: diff.summary.headersChanged,
-    queryChanged: diff.summary.queryChanged,
-    bodyChanged: diff.summary.bodyChanged,
-    hasChanges: diff.summary.methodChanged || 
-                diff.summary.pathChanged || 
-                diff.summary.headersChanged || 
-                diff.summary.queryChanged || 
-                diff.summary.bodyChanged
-  };
-}
-
-module.exports = {
-  diffRequests,
-  diffSummary
-};
+module.exports = { diffRequests };

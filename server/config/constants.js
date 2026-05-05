@@ -38,9 +38,5 @@ module.exports = {
   FORWARD_ALLOW_PRIVATE:
     process.env.FORWARD_ALLOW_PRIVATE !== undefined
       ? process.env.FORWARD_ALLOW_PRIVATE === 'true'
-      : process.env.NODE_ENV !== 'production',
-
-  // Signature verification (v1.2)
-  SIGNATURE_PROVIDERS: ['stripe', 'github', 'slack', 'twilio'],
-  SIGNATURE_TIMESTAMP_TOLERANCE: 300 // 5 minutes (for replay protection)
+      : process.env.NODE_ENV !== 'production'
 };

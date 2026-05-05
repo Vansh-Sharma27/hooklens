@@ -2,6 +2,7 @@
  * Request Diff UI
  * Compare two captured requests side-by-side
  */
+import { escapeHtml, showNotification } from './utils.js';
 
 let currentEndpointId = null;
 let diffMode = false;
@@ -114,7 +115,7 @@ export async function compareTwoRequests(requestId1, requestId2) {
     return result;
   } catch (error) {
     console.error('Error comparing requests:', error);
-    alert(`Error: ${error.message}`);
+    showNotification(error.message, 'error');
   }
 }
 
@@ -269,9 +270,3 @@ function formatTimestamp(timestamp) {
   return date.toLocaleTimeString();
 }
 
-function escapeHtml(text) {
-  if (text === null || text === undefined) return '';
-  const div = document.createElement('div');
-  div.textContent = String(text);
-  return div.innerHTML;
-}

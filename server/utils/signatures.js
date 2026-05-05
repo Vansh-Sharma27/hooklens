@@ -266,16 +266,4 @@ function safeEqual(received, expected) {
   return crypto.timingSafeEqual(a, b);
 }
 
-/**
- * List supported providers
- * @returns {Array} Array of provider names
- */
-function getSupportedProviders() {
-  return Object.keys(PROVIDERS);
-}
-
-module.exports = {
-  verifySignature,
-  getSupportedProviders,
-  PROVIDERS
-};
+module.exports = { verifySignature };

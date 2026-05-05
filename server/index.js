@@ -23,8 +23,11 @@ app.use((req, res, next) => {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
+    // script-src is 'self' only: the page loads no inline or third-party
+    // scripts. style-src still needs 'unsafe-inline' for the style attributes
+    // in the markup and the inline styles set by the notification helper.
     'Content-Security-Policy':
-      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' cdn.tailwindcss.com; font-src 'self' fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:; object-src 'none'; base-uri 'self';",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
     'Referrer-Policy': 'strict-origin-when-cross-origin'
   });
   next();

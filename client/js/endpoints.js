@@ -23,11 +23,6 @@ export function addEndpointId(id) {
   }
 }
 
-export function removeEndpointId(id) {
-  const ids = getStoredEndpointIds().filter(i => i !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-}
-
 export async function fetchEndpointList() {
   const ids = getStoredEndpointIds();
   if (!ids.length) return [];

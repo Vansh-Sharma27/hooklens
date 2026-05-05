@@ -28,7 +28,11 @@ export async function copyToClipboard(text) {
   document.body.removeChild(textarea);
 }
 
+// Escapes quotes as well as tags, so the result is safe in an attribute value
+// and not only in text content.
 export function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+
   return String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -37,44 +41,33 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-export function generateCurl(request, baseUrl) {
-  const parts = ['curl'];
+const NOTIFICATION_COLORS = {
+  success: '#2ea043',
+  error: '#da3633',
+  info: '#1f6feb'
+};
 
-  if (request.method && request.method !== 'GET') {
-    parts.push(`-X ${request.method}`);
-  }
+export function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    background: ${NOTIFICATION_COLORS[type] || NOTIFICATION_COLORS.info};
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    animation: slideIn 0.3s ease;
+  `;
 
-  if (request.headers) {
-    Object.entries(request.headers).forEach(([key, value]) => {
-      if (!['host', 'content-length', 'connection'].includes(key.toLowerCase())) {
-        parts.push(`-H '${escapeShell(value)}'`);
-      }
-    });
-  }
+  document.body.appendChild(notification);
 
-  if (request.body) {
-    if (request.isJson) {
-      parts.push(`-d '${escapeShell(request.body)}'`);
-    } else {
-      parts.push(`--data-raw '${escapeShell(request.body)}'`);
-    }
-  }
-
-  const fullUrl = joinUrl(baseUrl, request.path || '');
-  parts.push(`'${fullUrl}'`);
-  return parts.join(' \\\n  ');
-}
-
-function escapeShell(value) {
-  return String(value).replace(/'/g, "'\\''");
-}
-
-function joinUrl(baseUrl, path) {
-  if (!baseUrl) return path;
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
-  }
-  const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  const suffix = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${suffix}`;
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }

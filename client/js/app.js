@@ -61,6 +61,10 @@ const copyHeadersButton = document.getElementById('copy-headers');
 const copyCurlButton = document.getElementById('copy-curl');
 const copyBodyButton = document.getElementById('copy-body');
 
+// Mirrors MAX_REQUESTS_PER_ENDPOINT on the server. The client cannot import
+// server config, so this has to be kept in step with server/config/constants.js.
+const MAX_REQUESTS_SHOWN = 100;
+
 const state = {
   endpoint: null,
   endpoints: [],
@@ -204,7 +208,7 @@ async function initializeEndpoint() {
 function handleWebSocketMessage(message) {
   if (message.type === 'NEW_REQUEST') {
     state.requests.unshift(message.data);
-    state.requests = state.requests.slice(0, 100);
+    state.requests = state.requests.slice(0, MAX_REQUESTS_SHOWN);
     applyFilters();
     updateClearButtonState();
     announceNewRequest(message.data);

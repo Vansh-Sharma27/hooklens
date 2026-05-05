@@ -1,6 +1,7 @@
 /**
  * Postman Collection Export UI
  */
+import { showNotification } from './utils.js';
 
 let currentEndpointId = null;
 
@@ -68,7 +69,7 @@ async function confirmExport() {
 export async function exportToPostman(options = {}) {
   if (!currentEndpointId) {
     console.error('No endpoint ID set');
-    alert('No endpoint selected for export');
+    showNotification('No endpoint selected for export', 'error');
     return;
   }
 
@@ -119,29 +120,4 @@ export async function exportToPostman(options = {}) {
     console.error('Error exporting to Postman:', error);
     showNotification(error.message, 'error');
   }
-}
-
-function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    background: ${type === 'success' ? '#2ea043' : type === 'error' ? '#da3633' : '#1f6feb'};
-    color: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 10000;
-    animation: slideIn 0.3s ease;
-  `;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
 }
