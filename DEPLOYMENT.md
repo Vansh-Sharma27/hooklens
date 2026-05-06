@@ -471,8 +471,15 @@ All platforms support these variables:
 | `NODE_ENV` | No | development | Environment (production/development) |
 | `BASE_URL` | No | Auto-detected | Public URL for generating webhook URLs |
 | `RATE_LIMIT_ENABLED` | No | true | Enable/disable rate limiting |
+| `HOOK_RATE_LIMIT_MAX` | No | 1000 | Captures per minute, per endpoint |
+| `FORWARD_ALLOW_PRIVATE` | No | false in production | Permit forwarding to private/loopback addresses |
 | `STORAGE_TYPE` | No | sqlite | `sqlite` (persistent) or `memory` |
 | `DB_PATH` | No | ./data/hooklens.db | SQLite database location |
+
+Leave `FORWARD_ALLOW_PRIVATE` unset on a publicly reachable deployment. Enabling
+it lets anyone who can create an endpoint make the server issue requests to
+addresses only it can reach, such as instance metadata or internal services, and
+read the responses back through the dashboard.
 
 ---
 

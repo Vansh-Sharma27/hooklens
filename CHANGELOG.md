@@ -29,14 +29,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `bodySize` now reports the true byte count received rather than the length of
   a re-serialised copy.
 
+- Signature comparison ran in variable time, so a signature could in principle
+  be recovered a byte at a time by timing repeated guesses. It is now constant
+  time.
+- Forward targets were unrestricted. Any URL that parsed was accepted and the
+  request was issued with the captured `Authorization` and `Cookie` headers
+  attached, which on a public instance allowed reaching internal addresses.
+  Schemes are now limited to `http` and `https`, and private, loopback and
+  reserved addresses are refused unless `FORWARD_ALLOW_PRIVATE` is set (on by
+  default outside production, so local forwarding is unaffected).
+- Rate limiting used a single bucket for every route, so a bursting webhook
+  sender lost captures to `429` and could exhaust the budget the dashboard
+  needed. Capture now has its own per-endpoint limit and static assets are not
+  counted. Rate limited responses are JSON rather than plain text.
+- JSON syntax highlighting never applied any highlighting. The body was escaped
+  before being matched, and the pattern was written as though it were inside a
+  string literal, so no token could match.
+- Switching endpoints from the sidebar left the forwarding, diff and export
+  modules pointing at the previous endpoint.
+- Auto-forward results could never render against the open request, because the
+  code looked up an element id that is not in the markup.
+- Untrusted values were interpolated into the dashboard without escaping, most
+  importantly the forward target's HTTP status text, which that host controls.
+- Oversized request bodies are rejected with `413` rather than a connection
+  reset.
+
 ### Added
-- Regression test suite (`npm test`) using the built-in `node:test` runner.
+- Regression test suite (`npm test`) using the built-in `node:test` runner,
+  including direct coverage of the SQLite backend.
 - Load and latency benchmark harness under `bench/`.
 
 ### Changed
+- `addRequest` no longer loads an endpoint's stored requests just to check the
+  endpoint exists, and SQL is compiled once rather than per call. Capture
+  saturation moves from roughly 220 to roughly 300 requests/second.
+- Removed the Tailwind CDN. It supplied two colour utilities that the stylesheet
+  already set, so the dashboard now loads no third-party script and needs no
+  network access to render. `script-src` tightened to `'self'`.
+- The dashboard loads one module script instead of twelve.
 - Background cleanup and WebSocket heartbeat timers no longer keep the process
   alive on their own.
 - The server only binds a port when run directly, so it can be imported by tests.
+
+### Removed
+- Dead exports and duplicated helpers: `diffSummary`, `getSupportedProviders`,
+  the client-side `generateCurl` (unreachable, and it dropped header names),
+  `removeEndpointId`, `showSignaturePanel`, `hideSignaturePanel`, and the unused
+  signature constants. Four `escapeHtml` copies and two `showNotification`
+  copies consolidated into `client/js/utils.js`.
+- The theme toggle button, which had no handler.
 
 ## [1.2.0] - 2026-02-01
 

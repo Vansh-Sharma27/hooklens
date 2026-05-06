@@ -10,7 +10,8 @@ A developer tool that provides instant, disposable webhook endpoints for capturi
 
 - **Instant Webhook URLs** - Generate unique public endpoints in one click
 - **Real-time Updates** - See incoming requests appear instantly via WebSocket
-- **Request Inspection** - View headers, query parameters, and body
+- **Request Inspection** - View headers, query parameters, and body with JSON
+  syntax highlighting
 - **Custom Responses** - Configure status codes, response bodies, and delays
 - **Persistent Storage** - SQLite by default, 7-day retention across restarts
 - **Multiple Endpoints** - Keep up to 20 endpoints in the sidebar per browser
@@ -357,6 +358,8 @@ DB_PATH=./data/hooklens.db   # SQLite database path
 | `NODE_ENV` | `development` | Stack traces are omitted in `production` |
 | `BASE_URL` | request host | Overrides the URL shown for endpoints |
 | `RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable rate limiting |
+| `HOOK_RATE_LIMIT_MAX` | `1000` | Captures per minute, per endpoint |
+| `FORWARD_ALLOW_PRIVATE` | on outside production | Permit forwarding to private and loopback addresses |
 | `STORAGE_TYPE` | `sqlite` | `sqlite` persists, `memory` does not |
 | `DB_PATH` | `./data/hooklens.db` | SQLite file location |
 
@@ -369,10 +372,13 @@ Default configuration (see `server/config/constants.js`):
 - **Endpoint TTL**: 7 days
 - **Max Body Size**: 1MB, enforced — larger bodies are rejected with `413`
 - **Max Response Delay**: 30 seconds
-- **Rate Limit**: 100 requests/minute per IP, applied to all routes including
-  `/hook/:id`. A sender bursting above this receives `429` and those webhooks
-  are not captured. Raise `RATE_LIMIT_MAX` or set `RATE_LIMIT_ENABLED=false`
-  when replaying large batches.
+- **API Rate Limit**: 100 requests/minute per IP, for `/api` only
+- **Capture Rate Limit**: 1000 requests/minute *per endpoint*, for `/hook/:id`.
+  Keyed by endpoint rather than by sender IP, so one busy endpoint cannot
+  consume another's budget or lock you out of the dashboard. Raise it with
+  `HOOK_RATE_LIMIT_MAX` when replaying large batches.
+
+Static assets and the dashboard page are not rate limited.
 
 ## Deployment
 
@@ -466,7 +472,7 @@ node bench/fanout.js     # webhook accepted -> dashboard notified
 ```
 
 See `bench/README.md` for methodology and a recorded baseline. Note that SQLite
-storage is synchronous and saturates near 220 requests/second on the reference
+storage is synchronous and saturates near 300 requests/second on the reference
 machine; the in-memory backend is far faster but does not persist.
 
 ### Manual Testing
@@ -493,33 +499,48 @@ Configure webhook URLs in:
 
 ## Security Considerations
 
-- **Rate Limiting**: Enabled by default (100 req/min per IP)
+- **Rate Limiting**: Enabled by default, separately for the API and for capture
 - **Endpoint IDs**: 12-char nanoid strings. The id is the only access control —
   anyone who has it can read every request captured by that endpoint, over both
   the REST API and the WebSocket. Treat endpoint URLs as secrets.
 - **Body Size Limits**: 1MB maximum, enforced
+- **Signature Comparison**: Constant-time, so a signature cannot be recovered by
+  timing repeated guesses
 - **No PII Logging**: Request bodies are not logged server-side
 - **CORS**: Permissive, so webhook senders are never blocked
-- **CSP Headers**: Content Security Policy enforced
+- **CSP Headers**: `script-src 'self'` with no inline scripts and no
+  third-party origins
 
 ### Forwarding
 
-Request forwarding performs an outbound HTTP request to whatever URL is
-configured, and replays the captured headers — including `Authorization` and
-`Cookie` — to that target. There is currently no restriction on the destination,
-so a publicly reachable instance lets anyone who can create an endpoint make the
-server issue requests to addresses it can reach, including private ones. Run
-HookLens locally, or behind authentication, if that matters to you.
+Request forwarding makes an outbound HTTP request to the configured URL and
+replays the captured headers to it, `Authorization` and `Cookie` included. Two
+restrictions apply:
+
+- Only `http` and `https` targets are accepted, always.
+- Loopback, private, carrier-grade NAT, link-local and reserved addresses are
+  refused when `FORWARD_ALLOW_PRIVATE` is off, which is the default under
+  `NODE_ENV=production`. Hostnames are resolved and every resulting address is
+  checked. Development keeps private targets enabled, since forwarding to
+  localhost is the normal workflow.
+
+On a publicly reachable instance, leave the default in place. Turning
+`FORWARD_ALLOW_PRIVATE=true` back on there lets anyone who can create an
+endpoint reach services only the server can see, and read the responses in the
+dashboard.
+
+This narrows but does not eliminate DNS rebinding: the hostname is resolved
+again when the request is made, so a record with a very short TTL could answer
+differently the second time.
 
 ## Known Limitations
 
 - **No Authentication**: Endpoints are public by design; the id is the capability
-- **Unrestricted Forward Targets**: See the note above
 - **Text Bodies**: Captured bodies are stored as UTF-8 text, so binary payloads
   are not preserved byte-for-byte
 - **Single-Node**: SQLite storage assumes one process; there is no clustering
-- **JSON Syntax Highlighting**: Not currently working — request bodies render as
-  plain text
+- **Throughput**: The synchronous SQLite driver caps capture at roughly 300
+  requests/second; see `bench/README.md`
 
 ## Roadmap
 
